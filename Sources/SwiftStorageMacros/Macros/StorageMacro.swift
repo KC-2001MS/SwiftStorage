@@ -48,10 +48,15 @@ public struct StorageMacro {
     }
     
     
-    static let trackedMacroName = "LocalStorageProperty"
+    static let localStoragePropertyMacroName = "LocalStorageProperty"
+    
+    static let observationTrackedMacroName = "ObservationTracked"
     
     static let transientMacroName = "Transient"
     
+    static let observationIgnoredMacroName = "ObservationIgnored"
+    
+    static let attributeMacroName = "Attribute"
     
     static let registrarVariableName = "_$observationRegistrar"
     
@@ -82,6 +87,13 @@ public struct StorageMacro {
       ) rethrows -> MutationResult {
       try \(raw: registrarVariableName).withMutation(of: self, keyPath: keyPath, mutation)
       }
+      """
+    }
+    
+    static func classNameVariable(_ name: String) -> DeclSyntax {
+        return
+      """
+      @\(raw: transientMacroName) private let className = "\(raw: name)"
       """
     }
     
@@ -221,6 +233,10 @@ extension StorageMacro: MemberMacro {
             return []
         }
         
+        guard let property = declaration.as(ClassDeclSyntax.self) else {
+            return []
+        }
+        
         let storageType = identified.name.trimmed
         
         if declaration.isEnum {
@@ -241,6 +257,7 @@ extension StorageMacro: MemberMacro {
         declaration.addIfNeeded(StorageMacro.registrarVariable(storageType), to: &declarations)
         declaration.addIfNeeded(StorageMacro.accessFunction(storageType), to: &declarations)
         declaration.addIfNeeded(StorageMacro.withMutationFunction(storageType), to: &declarations)
+        declaration.addIfNeeded(StorageMacro.classNameVariable(property.name.text), to: &declarations)
         
         return declarations
     }
@@ -257,20 +274,24 @@ extension StorageMacro: MemberAttributeMacro {
         providingAttributesFor member: MemberDeclaration,
         in context: Context
     ) throws -> [AttributeSyntax] {
-        guard let property = member.as(VariableDeclSyntax.self), property.isValidForObservation,
-              property.identifier != nil else {
+        guard let property = member.as(VariableDeclSyntax.self),
+              property.isValidForObservation,
+              property.identifier != nil
+        else {
             return []
         }
         
         // dont apply to ignored properties or properties that are already flagged as tracked
         if property.hasMacroApplication(StorageMacro.transientMacroName) ||
-            property.hasMacroApplication(StorageMacro.trackedMacroName) {
+            property.hasMacroApplication(StorageMacro.observationIgnoredMacroName) ||
+            property.hasMacroApplication(StorageMacro.localStoragePropertyMacroName) ||
+            property.hasMacroApplication(StorageMacro.observationTrackedMacroName) {
             return []
         }
         
         
         return [
-            AttributeSyntax(attributeName: IdentifierTypeSyntax(name: .identifier(StorageMacro.trackedMacroName)))
+            AttributeSyntax(attributeName: IdentifierTypeSyntax(name: .identifier(StorageMacro.localStoragePropertyMacroName)))
         ]
     }
 }

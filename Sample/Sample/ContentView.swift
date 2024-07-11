@@ -40,6 +40,8 @@ struct ContentView: View {
                     
                     Toggle("Save in Key Value Store", isOn: $settings.isStoredInKeyValueStore)
                     
+                    Toggle("Specify keys individually", isOn: $settings.isSpecifiedIndividually)
+                    
                     Toggle("Key Value Store and UserDefaults together", isOn: $settings.isPossibleToUseKeyValueStoreAndUserDefaultsTogether)
                 } header: {
                     Text("Features")
@@ -47,7 +49,24 @@ struct ContentView: View {
                 
                 Section {
                     Toggle("Sample Bool", isOn: $settings.sampleBool)
+                    
+                    Stepper("Sample Int: \(settings.sampleInt)", value: $settings.sampleInt)
+                    
+                    Slider(value: $settings.sampleDouble, in: 0...10) {
+                        Text("Sample Double: \(settings.sampleDouble)")
+                    }
+                    
+                    Slider(value: $settings.sampleFloat, in: 0...10) {
+                        Text("Sample Float: \(settings.sampleFloat)")
+                    }
+                    
                     TextField("Sample String", text: $settings.sampleString)
+                    
+                    DatePicker(
+                            "Sample Date",
+                            selection: $settings.sampleDate,
+                            displayedComponents: [.date]
+                    )
                 } header: {
                     Text("Sample Data")
                 }

@@ -6,6 +6,7 @@ I would like the framework to have the following features
 - [x] Can be disabled on a per-property basis
 - [x] Save in UserDefaults
 - [ ] Save in Key Value Store
+- [x] Specify keys individually
 - [ ] Key Value Store and UserDefaults together
 Those not checked are to be realized in the future. However, we do not know when this will be, as our vision for implementation is not set in stone.
 ## Usage

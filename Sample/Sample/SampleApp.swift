@@ -14,5 +14,6 @@ struct SampleApp: App {
         WindowGroup {
             ContentView()
         }
+        .windowResizability(.contentSize)
     }
 }

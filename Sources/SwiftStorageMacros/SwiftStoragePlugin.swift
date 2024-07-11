@@ -17,5 +17,6 @@ struct SwiftStoragePlugin: CompilerPlugin {
         StorageMacro.self,
         LocalStoragePropertyMacro.self,
         TransientMacro.self,
+        AttributeMacro.self,
     ]
 }

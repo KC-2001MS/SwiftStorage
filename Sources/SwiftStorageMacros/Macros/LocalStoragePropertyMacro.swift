@@ -39,6 +39,12 @@ public struct LocalStoragePropertyMacro: AccessorMacro {
             return []
         }
         
+        var key = "\\(className).\(identifier)"
+        
+        if property.hasMacroApplication(StorageMacro.attributeMacroName), let text = property.attributeKey() {
+            key = text
+        }
+        
         let initAccessor: AccessorDeclSyntax =
       """
       @storageRestrictions(initializes: _\(identifier))
@@ -51,7 +57,7 @@ public struct LocalStoragePropertyMacro: AccessorMacro {
       """
       get {
       access(keyPath: \\.\(identifier))
-      return UserDefaults.standard.value(forKey: "\(identifier)") as? \(raw: type) ?? _\(identifier)
+      return UserDefaults.standard.value(forKey: "\(raw: key)") as? \(raw: type) ?? _\(identifier)
       }
       """
         
@@ -59,7 +65,7 @@ public struct LocalStoragePropertyMacro: AccessorMacro {
       """
       set {
       withMutation(keyPath: \\.\(identifier)) {
-      UserDefaults.standard.set(newValue, forKey: "\(identifier)")
+      UserDefaults.standard.set(newValue, forKey: "\(raw: key)")
       _\(identifier) = newValue
       }
       }
@@ -94,11 +100,34 @@ extension LocalStoragePropertyMacro: PeerMacro {
         }
         
         if property.hasMacroApplication(StorageMacro.transientMacroName) ||
-            property.hasMacroApplication(StorageMacro.trackedMacroName) {
+            property.hasMacroApplication(StorageMacro.observationIgnoredMacroName) ||
+            property.hasMacroApplication(StorageMacro.localStoragePropertyMacroName) ||
+            property.hasMacroApplication(StorageMacro.observationTrackedMacroName) {
             return []
         }
         
         let storage = DeclSyntax(property.privatePrefixed("_", addingAttribute: StorageMacro.ignoredAttribute))
         return [storage]
+    }
+}
+
+extension VariableDeclSyntax {
+    func attributeKey() -> String? {
+        for attribute in attributes {
+            switch attribute {
+            case .attribute(let attr):
+                if attr.attributeName.tokens(viewMode: .all).map({ $0.tokenKind }) == [.identifier(StorageMacro.attributeMacroName)] {
+                    switch attr.arguments {
+                    case .argumentList(let args):
+                        return args.first?.expression.as(StringLiteralExprSyntax.self)?.segments.first?.as(StringSegmentSyntax.self)?.content.text
+                    default:
+                        break
+                    }
+                }
+            default:
+                break
+            }
+        }
+        return nil
     }
 }
