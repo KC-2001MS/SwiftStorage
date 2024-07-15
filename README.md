@@ -1,5 +1,6 @@
 # SwiftStorage
 SwiftStorage is an easy way to persist data without Key Value. And it is designed to integrate seamlessly with SwiftUI.
+
 ## Features and Futures
 I would like the framework to have the following features
 - [x] Support for Observation framework
@@ -32,13 +33,13 @@ final class SwiftStorageModel {
 ```swift
 import SwiftUI
 
-struct ContentView: View {
+struct SwiftStorageView: View {
     @State private var swiftStorage = SwiftStorageModel()
     
     var body: some View {
         NavigationStack {
             Form {
-                Toggle("String", isOn: $swiftStorage.storedValue)
+                Toggle("Bool", isOn: $swiftStorage.storedValue)
             }
         }
     }
@@ -71,6 +72,7 @@ final class SwiftStorageModel {
 ## Installation
 You can add it to your project using the Swift Package Manager To add SwiftStorage to your Xcode project, select File > Add Package Dependancies... and find the repository URL:  
 `https://github.com/KC-2001MS/SwiftStorage.git`.
+
 ## Contributions
 1. Make suggestions in the Issues section and make sure they are adopted.
 2. Fork it
@@ -78,7 +80,19 @@ You can add it to your project using the Swift Package Manager To add SwiftStora
 4. Commit your changes
 5. Push to the branch
 6. Create new Pull Request
+
 ## Documents
 Documentation on the SwiftStorage framework can be found here.
+
 ## License
 This library is released under Apache-2.0 license. See [LICENSE](https://github.com/KC-2001MS/SwiftStorage/blob/main/LICENSE) for details.
+
+## Supporting
+If you would like to make a donation to this project, please click here. The money you give will be used to improve my programming skills and maintain the application.  
+<a href="https://www.buymeacoffee.com/iroiro" target="_blank">
+    <img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" style="height: 60px !important;width: 217px !important;" >
+</a>  
+[Pay by PayPal](https://paypal.me/iroiroWork?country.x=JP&locale.x=ja_JP)
+
+## Author
+[Keisuke Chinone](https://github.com/KC-2001MS)
