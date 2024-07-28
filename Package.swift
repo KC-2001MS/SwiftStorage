@@ -19,8 +19,9 @@ let package = Package(
         ),
     ],
     dependencies: [
-        .package(url: "https://github.com/apple/swift-syntax.git", from: "510.0.2"),
+        .package(url: "https://github.com/apple/swift-syntax.git", from: "600.0.0-prerelease-2024-07-24"),
         .package(url: "https://github.com/apple/swift-docc-plugin", from: "1.3.0"),
+        .package(url: "https://github.com/apple/swift-testing.git", exact: "0.11.0"),
     ],
     targets: [
         // Targets are the basic building blocks of a package, defining a module or a test suite.
@@ -36,9 +37,15 @@ let package = Package(
 
         // Library that exposes a macro as part of its API, which is used in client programs.
         .target(name: "SwiftStorage", dependencies: ["SwiftStorageMacros"]),
-
         // A client of the library, which is able to use the macro in its own code.
         .executableTarget(name: "SwiftStorageClient", dependencies: ["SwiftStorage"]),
-
+        .testTarget(
+            name: "SwiftStorageTests",
+            dependencies: [
+                .product(name: "SwiftSyntaxMacrosTestSupport", package: "swift-syntax"),
+                .product(name: "Testing", package: "swift-testing"),
+                "SwiftStorage"
+            ]
+        ),
     ]
 )
