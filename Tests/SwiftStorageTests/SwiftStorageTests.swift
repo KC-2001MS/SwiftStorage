@@ -5,13 +5,12 @@
 //  Created by Keisuke Chinone on 2024/07/29.
 //
 
+#if canImport(SwiftStorageMacros) && swift(>=6.0)
 import SwiftSyntax
 import SwiftSyntaxBuilder
 import SwiftSyntaxMacros
 import SwiftSyntaxMacrosTestSupport
 import Testing
-
-#if canImport(SwiftStorageMacros)
 import SwiftStorageMacros
 
 extension Tag {
