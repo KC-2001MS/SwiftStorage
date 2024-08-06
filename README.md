@@ -74,15 +74,10 @@ You can add it to your project using the Swift Package Manager To add SwiftStora
 `https://github.com/KC-2001MS/SwiftStorage.git`.
 
 ## Contributions
-1. Make suggestions in the Issues section and make sure they are adopted.
-2. Fork it
-3. Create your feature branch
-4. Commit your changes
-5. Push to the branch
-6. Create new Pull Request
+See [CONTRIBUTING.md](https://github.com/KC-2001MS/SwiftStorage/CONTRIBUTING.md) if you want to make a contribution.
 
 ## Documents
-Documentation on the SwiftStorage framework can be found here.
+Documentation on the SwiftStorage framework can be found [here](https://iroiro.dev/SwiftStorage/documentation/swiftstorage/).
 
 ## License
 This library is released under Apache-2.0 license. See [LICENSE](https://github.com/KC-2001MS/SwiftStorage/blob/main/LICENSE) for details.

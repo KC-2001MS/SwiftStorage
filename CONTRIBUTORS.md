@@ -4,7 +4,10 @@ Thanks to all who have contributed to this project, and we look forward to worki
 
 ## Project Administrator
 
-- [KC-2001MS](https://github.com/KC-2001MS) - Project initialization and maintenance
+- Keisuke Chinone
+  - GitHub: KC-2001MS
+  - Email: iroiro.work1234@gmail.com
+  - Project initialization and maintenance
 <!-- 
 ## Contributors
 
