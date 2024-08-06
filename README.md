@@ -74,7 +74,7 @@ You can add it to your project using the Swift Package Manager To add SwiftStora
 `https://github.com/KC-2001MS/SwiftStorage.git`.
 
 ## Contributions
-See [CONTRIBUTING.md](https://github.com/KC-2001MS/SwiftStorage/CONTRIBUTING.md) if you want to make a contribution.
+See [CONTRIBUTING.md](https://github.com/KC-2001MS/SwiftStorage/blob/main/CONTRIBUTING.md) if you want to make a contribution.
 
 ## Documents
 Documentation on the SwiftStorage framework can be found [here](https://iroiro.dev/SwiftStorage/documentation/swiftstorage/).

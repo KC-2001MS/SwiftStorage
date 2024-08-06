@@ -60,7 +60,7 @@ Once submitted, your pull request will be reviewed. Engage with any feedback pro
 
 ### Community Standards
 
-SwiftStorage adheres to the Contributor Covenant Code of Conduct (https://github.com/KC-2001MS/SwiftStorage/CODE_OF_CONDUCT.md) to create an inclusive and respectful environment for all users. Harassment of any kind is strictly prohibited. Kindly review the Code of Conduct for further details.
+SwiftStorage adheres to the Contributor Covenant Code of Conduct (https://github.com/KC-2001MS/SwiftStorage/blob/main/CODE_OF_CONDUCT.md) to create an inclusive and respectful environment for all users. Harassment of any kind is strictly prohibited. Kindly review the Code of Conduct for further details.
 
 ## Help
 
