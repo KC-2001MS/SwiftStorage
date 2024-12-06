@@ -2,8 +2,7 @@
   "images" : [
     {
       "filename" : "front.png",
-      "idiom" : "vision",
-      "scale" : "2x"
+      "idiom" : "tv"
     }
   ],
   "info" : {

@@ -50,6 +50,7 @@ struct ContentView: View {
                 Section {
                     Toggle("Sample Bool", isOn: $settings.sampleBool)
                     
+#if !os(tvOS)
                     Stepper("Sample Int: \(settings.sampleInt)", value: $settings.sampleInt)
                     
                     Slider(value: $settings.sampleDouble, in: 0...10) {
@@ -59,14 +60,16 @@ struct ContentView: View {
                     Slider(value: $settings.sampleFloat, in: 0...10) {
                         Text("Sample Float: \(settings.sampleFloat)")
                     }
-                    
+                    #endif
                     TextField("Sample String", text: $settings.sampleString)
                     
+#if !os(tvOS)
                     DatePicker(
                             "Sample Date",
                             selection: $settings.sampleDate,
                             displayedComponents: [.date]
                     )
+#endif
                 } header: {
                     Text("Sample Data")
                 }

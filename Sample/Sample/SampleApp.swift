@@ -14,6 +14,8 @@ struct SampleApp: App {
         WindowGroup {
             ContentView()
         }
+        #if !os(tvOS)
         .windowResizability(.contentSize)
+        #endif
     }
 }
