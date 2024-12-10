@@ -5,9 +5,7 @@
 //  Created by Keisuke Chinone on 2024/07/07.
 //
 
-
 import SwiftUI
-import SwiftStorage
 
 struct ContentView: View {
     @State private var settings = SettingsObject()

@@ -16,8 +16,6 @@ Basically, the usage is the same as the Observable macro in the Observation fram
 Use the Storage macro instead of the Observable macro. This change alone allows you to store properties permanently.
 #### Model Definition
 ```swift
-import Observation
-import Foundation
 import SwiftStorage
 
 @Storage
@@ -48,8 +46,6 @@ struct SwiftStorageView: View {
 ### Disable persistence
 If it is a constant, it will not be saved. Also, if the Transient macro is applied, even if it is a variable, it will not be saved.
 ```swift
-import Observation
-import Foundation
 import SwiftStorage
 
 @Storage
