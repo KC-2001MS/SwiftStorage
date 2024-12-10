@@ -9,8 +9,8 @@
 // The Swift Programming Language
 // https://docs.swift.org/swift-book
 #if canImport(Observation) && canImport(Foundation)
-import Observation
-import Foundation
+@_exported import Observation
+@_exported import Foundation
 
 /// Macros to adapt persistence and observation to properties in a class
 ///

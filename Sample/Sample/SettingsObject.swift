@@ -5,9 +5,6 @@
 //  Created by Keisuke Chinone on 2024/07/07.
 //
 
-
-import Observation
-import Foundation
 import SwiftStorage
 
 @Storage
@@ -41,7 +38,7 @@ final class SettingsObject {
     var transient: Bool
     @ObservationIgnored
     var observationIgnored: Bool
-    
+
     init() {
         self.isObservationSupported = true
         self.isDisabledOnAPerPropertyLevel = true

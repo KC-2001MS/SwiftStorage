@@ -7,6 +7,7 @@
 
 
 import SwiftUI
+import SwiftStorage
 
 struct ContentView: View {
     @State private var settings = SettingsObject()
