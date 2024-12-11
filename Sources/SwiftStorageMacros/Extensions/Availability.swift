@@ -86,8 +86,6 @@ extension AttributeListSyntax.Element {
             if let availability = ifConfig.availability {
                 return .ifConfigDecl(availability)
             }
-        default:
-            break
         }
         return nil
     }

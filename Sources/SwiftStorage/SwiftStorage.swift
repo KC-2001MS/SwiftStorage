@@ -54,7 +54,10 @@
 /// }
 /// ```
 /// Use the ``Transient`` macro if there are properties you do not want to preserve. You can also use the [ObservationTracked](https://developer.apple.com/documentation/observation/observationignored()) macro instead.
-@attached(member, names: named(_$id), named(_$observationRegistrar), named(access), named(withMutation), named(className), named(store))
+@attached(
+    member,
+    names: named(_$id), named(_$observationRegistrar), named(access), named(withMutation), named(className), named(store)
+)
 @attached(memberAttribute)
 @attached(extension, conformances: Observable)
 public macro Storage() = #externalMacro(module: "SwiftStorageMacros", type: "StorageMacro")
@@ -64,7 +67,7 @@ public macro Storage() = #externalMacro(module: "SwiftStorageMacros", type: "Sto
 /// This property is automatically added by the Storege macro. It is not necessary to describe it.
 @attached(accessor, names: named(init), named(get), named(set), named(_modify))
 @attached(peer, names: prefixed(_))
-public macro LocalStorageProperty() = #externalMacro(module: "SwiftStorageMacros", type: "LocalStoragePropertyMacro")
+public macro LocalStorageProperty(type: StorageType = .local) = #externalMacro(module: "SwiftStorageMacros", type: "LocalStoragePropertyMacro")
 /// Macro to set a key to associate the value
 /// - Parameters:
 ///  - key: A keys to associate values
@@ -82,7 +85,7 @@ public macro LocalStorageProperty() = #externalMacro(module: "SwiftStorageMacros
 /// }
 /// ```
 @attached(peer)
-public macro Attribute(key: String) = #externalMacro(module: "SwiftStorageMacros", type: "AttributeMacro")
+public macro Attribute(type: StorageType = .local, key: String) = #externalMacro(module: "SwiftStorageMacros", type: "AttributeMacro")
 
 /// Macro for specifying properties that are not observed and persisted
 ///

@@ -34,15 +34,28 @@ public struct LocalStoragePropertyMacro: AccessorMacro {
         }
         
         guard let binding = property.bindings.first,
-              let type = binding.typeAnnotation?.type.identifier
+              let _ = binding.typeAnnotation?.type.identifier
         else {
             return []
         }
         
+        
         var key = "\\(className).\(identifier)"
         
-        if property.hasMacroApplication(StorageMacro.attributeMacroName), let text = property.attributeKey() {
+        var storageType: String = ".local"
+        
+        if property
+            .hasMacroApplication(StorageMacro.attributeMacroName), let text = property.attributeStringValue(
+                for: "key"
+            ) {
             key = text
+        }
+        
+        if property
+            .hasMacroApplication(StorageMacro.attributeMacroName), let text = property.attributeTypeValue(
+                for: "type"
+            ) {
+            storageType = text
         }
         
         let initAccessor: AccessorDeclSyntax =
@@ -57,7 +70,7 @@ public struct LocalStoragePropertyMacro: AccessorMacro {
       """
       get {
       access(keyPath: \\.\(identifier))
-      return UserDefaults.standard.value(forKey: "\(raw: key)") as? \(raw: type) ?? _\(identifier)
+      return StorageManager(type: \(raw: storageType), key: "\(raw: key)").get(defaultValue: _\(identifier))
       }
       """
         
@@ -65,7 +78,7 @@ public struct LocalStoragePropertyMacro: AccessorMacro {
       """
       set {
       withMutation(keyPath: \\.\(identifier)) {
-      UserDefaults.standard.set(newValue, forKey: "\(raw: key)")
+      StorageManager(type: \(raw: storageType), key: "\(raw: key)").set(value: newValue)
       _\(identifier) = newValue
       }
       }
@@ -100,26 +113,99 @@ extension LocalStoragePropertyMacro: PeerMacro {
         }
         
         if property.hasMacroApplication(StorageMacro.transientMacroName) ||
-            property.hasMacroApplication(StorageMacro.observationIgnoredMacroName) ||
-            property.hasMacroApplication(StorageMacro.localStoragePropertyMacroName) ||
-            property.hasMacroApplication(StorageMacro.observationTrackedMacroName) {
+            property
+            .hasMacroApplication(StorageMacro.observationIgnoredMacroName) ||
+            property
+            .hasMacroApplication(StorageMacro.localStoragePropertyMacroName) ||
+            property
+            .hasMacroApplication(StorageMacro.observationTrackedMacroName) {
             return []
         }
         
-        let storage = DeclSyntax(property.privatePrefixed("_", addingAttribute: StorageMacro.ignoredAttribute))
+        let storage = DeclSyntax(
+            property
+                .privatePrefixed(
+                    "_",
+                    addingAttribute: StorageMacro.ignoredAttribute
+                )
+        )
         return [storage]
     }
 }
 
 extension VariableDeclSyntax {
-    func attributeKey() -> String? {
+    func attributeStringValue(for key: String) -> String? {
         for attribute in attributes {
             switch attribute {
             case .attribute(let attr):
-                if attr.attributeName.tokens(viewMode: .all).map({ $0.tokenKind }) == [.identifier(StorageMacro.attributeMacroName)] {
+                // 属性名が目的のものか確認
+                if attr.attributeName
+                    .tokens(viewMode: .all)
+                    .map({ $0.tokenKind }) == [.identifier(
+                        StorageMacro.attributeMacroName
+                    )] {
                     switch attr.arguments {
                     case .argumentList(let args):
-                        return args.first?.expression.as(StringLiteralExprSyntax.self)?.segments.first?.as(StringSegmentSyntax.self)?.content.text
+                        // 引数リストから目的のキーに一致する値を検索
+                        for arg in args {
+                            if let labeledExpr = arg.as(LabeledExprSyntax.self),
+                               labeledExpr.label?.text == key {
+                                
+                                return labeledExpr.expression
+                                    .as(
+                                        StringLiteralExprSyntax.self
+                                    )?.segments.first?
+                                    .as(StringSegmentSyntax.self)?.content.text
+                            }
+                        }
+                    default:
+                        break
+                    }
+                }
+            default:
+                break
+            }
+        }
+        return nil
+    }
+    
+    func attributeTypeValue(for key: String) -> String? {
+        for attribute in attributes {
+            switch attribute {
+            case .attribute(let attr):
+                // 属性名が目的のものか確認
+                if attr.attributeName
+                    .tokens(viewMode: .all)
+                    .map({ $0.tokenKind }) == [.identifier(
+                        StorageMacro.attributeMacroName
+                    )] {
+                    switch attr.arguments {
+                    case .argumentList(let args):
+                        // 引数リストから目的のキーに一致する値を検索
+                        for arg in args {
+                            if let label = arg.label?.text, label == "type" {
+                                // mode 引数を解析
+                                if let enumCaseExpr = arg.expression.as(
+                                    MemberAccessExprSyntax.self
+                                ) {
+                                    // `.localWith(type: nil)` を文字列として取得
+                                    let enumCaseString = enumCaseExpr.description.trimmingCharacters(
+                                        in: .whitespacesAndNewlines
+                                    )
+                                    return enumCaseString
+                                }
+                                
+                                if let enumCaseExpr = arg.expression.as(
+                                    FunctionCallExprSyntax.self
+                                ) {
+                                    // `.local` を文字列として取得
+                                    let enumCaseString = enumCaseExpr.description.trimmingCharacters(
+                                        in: .whitespacesAndNewlines
+                                    )
+                                    return enumCaseString
+                                }
+                            }
+                        }
                     default:
                         break
                     }

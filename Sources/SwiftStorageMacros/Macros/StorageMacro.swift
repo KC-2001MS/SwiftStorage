@@ -97,11 +97,45 @@ public struct StorageMacro {
       """
     }
     
+//    static func loadFunction<Declaration: DeclGroupSyntax>(declaration: Declaration) -> DeclSyntax {
+//        guard let classDecl = declaration.as(ClassDeclSyntax.self) else {
+//            return ""
+//        }
+//        
+//        let properties = classDecl.memberBlock.members.compactMap { member -> (
+//            String,
+//            String
+//        )? in
+//            guard let varDecl = member.decl.as(VariableDeclSyntax.self),
+//                  let identifier = varDecl.bindings.first?.pattern.as(
+//                    IdentifierPatternSyntax.self
+//                  )?.identifier.text,
+//                  let typeAnnotation = varDecl.bindings.first?.typeAnnotation?.type.description.trimmingCharacters(in: .whitespacesAndNewlines) else {
+//                return nil
+//            }
+//            return (identifier, typeAnnotation)
+//        }
+//        
+//        return
+//                """
+//                func load() {
+//                    let keyValueStore = NSUbiquitousKeyValueStore.default
+//                \(raw: properties.map { (name, type) in
+//                    """
+//                    self.\(name) = keyValueStore.object(forKey: "\(name)") as? \(type) ?? self.\(name)
+//                    """
+//                }.joined(separator: "\n"))
+//                }
+//                """
+//    }
+    
     static var ignoredAttribute: AttributeSyntax {
         AttributeSyntax(
             leadingTrivia: .space,
             atSign: .atSignToken(),
-            attributeName: IdentifierTypeSyntax(name: .identifier(transientMacroName)),
+            attributeName: IdentifierTypeSyntax(
+                name: .identifier(transientMacroName)
+            ),
             trailingTrivia: .space
         )
     }
@@ -117,13 +151,22 @@ struct ObservationDiagnostic: DiagnosticMessage {
     var diagnosticID: MessageID
     var severity: DiagnosticSeverity
     
-    init(message: String, diagnosticID: SwiftDiagnostics.MessageID, severity: SwiftDiagnostics.DiagnosticSeverity = .error) {
+    init(
+        message: String,
+        diagnosticID: SwiftDiagnostics.MessageID,
+        severity: SwiftDiagnostics.DiagnosticSeverity = .error
+    ) {
         self.message = message
         self.diagnosticID = diagnosticID
         self.severity = severity
     }
     
-    init(message: String, domain: String, id: ID, severity: SwiftDiagnostics.DiagnosticSeverity = .error) {
+    init(
+        message: String,
+        domain: String,
+        id: ID,
+        severity: SwiftDiagnostics.DiagnosticSeverity = .error
+    ) {
         self.message = message
         self.diagnosticID = MessageID(domain: domain, id: id.rawValue)
         self.severity = severity
@@ -131,16 +174,35 @@ struct ObservationDiagnostic: DiagnosticMessage {
 }
 
 extension DiagnosticsError {
-    init<S: SyntaxProtocol>(syntax: S, message: String, domain: String = "Strage", id: ObservationDiagnostic.ID, severity: SwiftDiagnostics.DiagnosticSeverity = .error) {
-        self.init(diagnostics: [
-            Diagnostic(node: Syntax(syntax), message: ObservationDiagnostic(message: message, domain: domain, id: id, severity: severity))
-        ])
+    init<S: SyntaxProtocol>(
+        syntax: S,
+        message: String,
+        domain: String = "Strage",
+        id: ObservationDiagnostic.ID,
+        severity: SwiftDiagnostics.DiagnosticSeverity = .error
+    ) {
+        self.init(
+            diagnostics: [
+                Diagnostic(
+                    node: Syntax(syntax),
+                    message: ObservationDiagnostic(
+                        message: message,
+                        domain: domain,
+                        id: id,
+                        severity: severity
+                    )
+                )
+            ]
+        )
     }
 }
 
 extension DeclModifierListSyntax {
     func privatePrefixed(_ prefix: String) -> DeclModifierListSyntax {
-        let modifier: DeclModifierSyntax = DeclModifierSyntax(name: "private", trailingTrivia: .space)
+        let modifier: DeclModifierSyntax = DeclModifierSyntax(
+            name: "private",
+            trailingTrivia: .space
+        )
         return [modifier] + filter {
             switch $0.name.tokenKind {
             case .keyword(let keyword):
@@ -169,7 +231,12 @@ extension TokenSyntax {
     func privatePrefixed(_ prefix: String) -> TokenSyntax {
         switch tokenKind {
         case .identifier(let identifier):
-            return TokenSyntax(.identifier(prefix + identifier), leadingTrivia: leadingTrivia, trailingTrivia: trailingTrivia, presence: presence)
+            return TokenSyntax(
+                .identifier(prefix + identifier),
+                leadingTrivia: leadingTrivia,
+                trailingTrivia: trailingTrivia,
+                presence: presence
+            )
         default:
             return self
         }
@@ -181,12 +248,15 @@ extension PatternBindingListSyntax {
         var bindings = self.map { $0 }
         for index in 0..<bindings.count {
             let binding = bindings[index]
-            if let identifier = binding.pattern.as(IdentifierPatternSyntax.self) {
+            if let identifier = binding.pattern.as(
+                IdentifierPatternSyntax.self
+            ) {
                 bindings[index] = PatternBindingSyntax(
                     leadingTrivia: binding.leadingTrivia,
                     pattern: IdentifierPatternSyntax(
                         leadingTrivia: identifier.leadingTrivia,
-                        identifier: identifier.identifier.privatePrefixed(prefix),
+                        identifier: identifier.identifier
+                            .privatePrefixed(prefix),
                         trailingTrivia: identifier.trailingTrivia
                     ),
                     typeAnnotation: binding.typeAnnotation,
@@ -209,7 +279,12 @@ extension VariableDeclSyntax {
             leadingTrivia: leadingTrivia,
             attributes: newAttributes,
             modifiers: modifiers.privatePrefixed(prefix),
-            bindingSpecifier: TokenSyntax(bindingSpecifier.tokenKind, leadingTrivia: .space, trailingTrivia: .space, presence: .present),
+            bindingSpecifier: TokenSyntax(
+                bindingSpecifier.tokenKind,
+                leadingTrivia: .space,
+                trailingTrivia: .space,
+                presence: .present
+            ),
             bindings: bindings.privatePrefixed(prefix),
             trailingTrivia: trailingTrivia
         )
@@ -241,23 +316,57 @@ extension StorageMacro: MemberMacro {
         
         if declaration.isEnum {
             // enumerations cannot store properties
-            throw DiagnosticsError(syntax: node, message: "'@Storage' cannot be applied to enumeration type '\(storageType.text)'", id: .invalidApplication)
+            throw DiagnosticsError(
+                syntax: node,
+                message: "'@Storage' cannot be applied to enumeration type '\(storageType.text)'",
+                id: .invalidApplication
+            )
         }
         if declaration.isStruct {
             // structs are not yet supported; copying/mutation semantics tbd
-            throw DiagnosticsError(syntax: node, message: "'@Storage' cannot be applied to struct type '\(storageType.text)'", id: .invalidApplication)
+            throw DiagnosticsError(
+                syntax: node,
+                message: "'@Storage' cannot be applied to struct type '\(storageType.text)'",
+                id: .invalidApplication
+            )
         }
         if declaration.isActor {
             // actors cannot yet be supported for their isolation
-            throw DiagnosticsError(syntax: node, message: "'@Storage' cannot be applied to actor type '\(storageType.text)'", id: .invalidApplication)
+            throw DiagnosticsError(
+                syntax: node,
+                message: "'@Storage' cannot be applied to actor type '\(storageType.text)'",
+                id: .invalidApplication
+            )
         }
         
         var declarations = [DeclSyntax]()
         
-        declaration.addIfNeeded(StorageMacro.registrarVariable(storageType), to: &declarations)
-        declaration.addIfNeeded(StorageMacro.accessFunction(storageType), to: &declarations)
-        declaration.addIfNeeded(StorageMacro.withMutationFunction(storageType), to: &declarations)
-        declaration.addIfNeeded(StorageMacro.classNameVariable(property.name.text), to: &declarations)
+        declaration
+            .addIfNeeded(
+                StorageMacro.registrarVariable(storageType),
+                to: &declarations
+            )
+        declaration
+            .addIfNeeded(
+                StorageMacro.accessFunction(storageType),
+                to: &declarations
+            )
+        declaration
+            .addIfNeeded(
+                StorageMacro.withMutationFunction(storageType),
+                to: &declarations
+            )
+        declaration
+            .addIfNeeded(
+                StorageMacro.classNameVariable(property.name.text),
+                to: &declarations
+            )
+        
+//        declaration
+//            .addIfNeeded(
+//                StorageMacro.loadFunction(declaration: declaration),
+//                to: &declarations
+//            )
         
         return declarations
     }
@@ -283,15 +392,63 @@ extension StorageMacro: MemberAttributeMacro {
         
         // dont apply to ignored properties or properties that are already flagged as tracked
         if property.hasMacroApplication(StorageMacro.transientMacroName) ||
-            property.hasMacroApplication(StorageMacro.observationIgnoredMacroName) ||
-            property.hasMacroApplication(StorageMacro.localStoragePropertyMacroName) ||
-            property.hasMacroApplication(StorageMacro.observationTrackedMacroName) {
+            property
+            .hasMacroApplication(StorageMacro.observationIgnoredMacroName) ||
+            property
+            .hasMacroApplication(StorageMacro.localStoragePropertyMacroName) ||
+            property
+            .hasMacroApplication(StorageMacro.observationTrackedMacroName) {
             return []
         }
         
+        //        var typeValue: String = ".local"
+        //        
+        //        switch node.arguments {
+        //        case .argumentList(let args):
+        //            // 引数リストから目的のキーに一致する値を検索
+        //            for arg in args {
+        //                if let label = arg.label?.text, label == "type" {
+        //                    // mode 引数を解析
+        //                    if let enumCaseExpr = arg.expression.as(
+        //                        MemberAccessExprSyntax.self
+        //                    ) {
+        //                        // `.localWith(type: nil)` を文字列として取得
+        //                        let enumCaseString = enumCaseExpr.description.trimmingCharacters(
+        //                            in: .whitespacesAndNewlines
+        //                        )
+        //                        typeValue = enumCaseString
+        //                    }
+        //                    
+        //                    if let enumCaseExpr = arg.expression.as(
+        //                        FunctionCallExprSyntax.self
+        //                    ) {
+        //                        // `.local` を文字列として取得
+        //                        let enumCaseString = enumCaseExpr.description.trimmingCharacters(
+        //                            in: .whitespacesAndNewlines
+        //                        )
+        //                        typeValue = enumCaseString
+        //                    }
+        //                }
+        //            }
+        //        default:
+        //            break
+        //        }
+        //        
+        //        let attribute: AttributeSyntax =
+        //        """
+        //        @\(IdentifierTypeSyntax(name: .identifier(StorageMacro.localStoragePropertyMacroName)))(type: \(raw: typeValue))
+        //        """
         
         return [
-            AttributeSyntax(attributeName: IdentifierTypeSyntax(name: .identifier(StorageMacro.localStoragePropertyMacroName)))
+            //            attribute
+            AttributeSyntax(
+                attributeName: IdentifierTypeSyntax(
+                    name: 
+                            .identifier(
+                                StorageMacro.localStoragePropertyMacroName
+                            )
+                )
+            )
         ]
     }
 }

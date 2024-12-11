@@ -32,7 +32,7 @@ final class SettingsObject {
     var sampleString: String
     
     var sampleDate: Date
-    @Attribute(key: "Attribute")
+    @Attribute(type: .localWith(suite: "test"), key: "Attribute")
     var attribute: Bool
     @Transient
     var transient: Bool
@@ -42,7 +42,7 @@ final class SettingsObject {
     init() {
         self.isObservationSupported = true
         self.isDisabledOnAPerPropertyLevel = true
-        self.isStoredInUserDefaults = false
+        self.isStoredInUserDefaults = true
         self.isStoredInKeyValueStore = false
         self.isSpecifiedIndividually = true
         self.isPossibleToUseKeyValueStoreAndUserDefaultsTogether = false

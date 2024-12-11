@@ -11,15 +11,15 @@
 		F7240E192C39BE19002CFF9F /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7240E182C39BE19002CFF9F /* ContentView.swift */; };
 		F7240E1B2C39BE1B002CFF9F /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = F7240E1A2C39BE1B002CFF9F /* Assets.xcassets */; };
 		F7240E1F2C39BE1B002CFF9F /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = F7240E1E2C39BE1B002CFF9F /* Preview Assets.xcassets */; };
+		F75BABC22D092D8100B7260E /* SwiftStorage in Frameworks */ = {isa = PBXBuildFile; productRef = F75BABC12D092D8100B7260E /* SwiftStorage */; };
+		F75BABC42D092D9400B7260E /* SwiftStorage in Frameworks */ = {isa = PBXBuildFile; productRef = F75BABC32D092D9400B7260E /* SwiftStorage */; };
 		F79432E62C3C455700329C86 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = F79432E52C3C455700329C86 /* PrivacyInfo.xcprivacy */; };
 		F79432F82C3C589D00329C86 /* Sample for watchOS Watch App.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = F79432EB2C3C589C00329C86 /* Sample for watchOS Watch App.app */; platformFilter = ios; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		F79432FD2C3C58E900329C86 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7240E182C39BE19002CFF9F /* ContentView.swift */; };
 		F79432FE2C3C58E900329C86 /* SettingsObject.swift in Sources */ = {isa = PBXBuildFile; fileRef = F798E1342C39CA1B007B276B /* SettingsObject.swift */; };
 		F79432FF2C3C591400329C86 /* SampleApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7240E162C39BE19002CFF9F /* SampleApp.swift */; };
 		F79433002C3C59C700329C86 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = F7240E1A2C39BE1B002CFF9F /* Assets.xcassets */; };
-		F79433022C3C59FB00329C86 /* SwiftStorage in Frameworks */ = {isa = PBXBuildFile; productRef = F79433012C3C59FB00329C86 /* SwiftStorage */; };
 		F798E1352C39CA1E007B276B /* SettingsObject.swift in Sources */ = {isa = PBXBuildFile; fileRef = F798E1342C39CA1B007B276B /* SettingsObject.swift */; };
-		F798E1382C39CA2C007B276B /* SwiftStorage in Frameworks */ = {isa = PBXBuildFile; productRef = F798E1372C39CA2C007B276B /* SwiftStorage */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -63,7 +63,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				F798E1382C39CA2C007B276B /* SwiftStorage in Frameworks */,
+				F75BABC42D092D9400B7260E /* SwiftStorage in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -71,7 +71,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				F79433022C3C59FB00329C86 /* SwiftStorage in Frameworks */,
+				F75BABC22D092D8100B7260E /* SwiftStorage in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -144,7 +144,7 @@
 			);
 			name = Sample;
 			packageProductDependencies = (
-				F798E1372C39CA2C007B276B /* SwiftStorage */,
+				F75BABC32D092D9400B7260E /* SwiftStorage */,
 			);
 			productName = Sample;
 			productReference = F7240E132C39BE19002CFF9F /* Sample.app */;
@@ -164,7 +164,7 @@
 			);
 			name = "Sample for watchOS Watch App";
 			packageProductDependencies = (
-				F79433012C3C59FB00329C86 /* SwiftStorage */,
+				F75BABC12D092D8100B7260E /* SwiftStorage */,
 			);
 			productName = "Sample for watchOS Watch App";
 			productReference = F79432EB2C3C589C00329C86 /* Sample for watchOS Watch App.app */;
@@ -178,7 +178,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 1600;
-				LastUpgradeCheck = 1600;
+				LastUpgradeCheck = 1610;
 				TargetAttributes = {
 					F7240E122C39BE19002CFF9F = {
 						CreatedOnToolsVersion = 16.0;
@@ -295,6 +295,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
@@ -356,6 +357,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -383,6 +385,7 @@
 				CODE_SIGN_ENTITLEMENTS = Sample/Sample.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_ASSET_PATHS = "\"Sample/Preview Content\"";
 				DEVELOPMENT_TEAM = 7AA87AZ875;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -425,6 +428,7 @@
 				CODE_SIGN_ENTITLEMENTS = Sample/Sample.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_ASSET_PATHS = "\"Sample/Preview Content\"";
 				DEVELOPMENT_TEAM = 7AA87AZ875;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -553,11 +557,11 @@
 /* End XCConfigurationList section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		F79433012C3C59FB00329C86 /* SwiftStorage */ = {
+		F75BABC12D092D8100B7260E /* SwiftStorage */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = SwiftStorage;
 		};
-		F798E1372C39CA2C007B276B /* SwiftStorage */ = {
+		F75BABC32D092D9400B7260E /* SwiftStorage */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = SwiftStorage;
 		};
