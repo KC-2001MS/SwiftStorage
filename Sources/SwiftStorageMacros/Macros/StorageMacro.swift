@@ -505,13 +505,18 @@ extension StorageMacro: MemberMacro {
                 to: &declarations
             )
 
-        // Parse class default storage type expression from @Storage(type:) arguments
+        // Parse class default storage type and hashed expressions from @Storage(type:hashed:) arguments
         var classDefaultTypeExpr: String = ".local"
+        var classDefaultHashed: Bool = true
         switch node.arguments {
         case .argumentList(let args):
             for arg in args {
                 if let label = arg.label?.text, label == "type" {
                     classDefaultTypeExpr = arg.expression.description.trimmingCharacters(in: .whitespacesAndNewlines)
+                }
+                if let label = arg.label?.text, label == "hashed",
+                   let boolLiteral = arg.expression.as(BooleanLiteralExprSyntax.self) {
+                    classDefaultHashed = boolLiteral.literal.tokenKind == .keyword(.true)
                 }
             }
         default:
@@ -553,8 +558,8 @@ extension StorageMacro: MemberMacro {
                 key = customKey
             }
 
-            // Determine hashing
-            var hashed = true
+            // Determine hashing (class default can be overridden by @Attribute(hashed:))
+            var hashed = classDefaultHashed
             if varDecl.hasMacroApplication(StorageMacro.attributeMacroName),
                let hashedValue = varDecl.attributeBoolValue(for: "hashed") {
                 hashed = hashedValue
@@ -709,12 +714,18 @@ extension StorageMacro: MemberAttributeMacro {
         }
 
         var typeValue: String = ".local"
+        var hashedValue: String = "true"
 
         switch node.arguments {
         case .argumentList(let args):
             for arg in args {
                 if let label = arg.label?.text, label == "type" {
                     typeValue = arg.expression.description.trimmingCharacters(
+                        in: .whitespacesAndNewlines
+                    )
+                }
+                if let label = arg.label?.text, label == "hashed" {
+                    hashedValue = arg.expression.description.trimmingCharacters(
                         in: .whitespacesAndNewlines
                     )
                 }
@@ -741,7 +752,7 @@ extension StorageMacro: MemberAttributeMacro {
 
         let attribute: AttributeSyntax =
         """
-        @\(IdentifierTypeSyntax(name: .identifier(StorageMacro.storedPropertyMacroName)))(type: \(raw: typeValue))
+        @\(IdentifierTypeSyntax(name: .identifier(StorageMacro.storedPropertyMacroName)))(type: \(raw: typeValue), hashed: \(raw: hashedValue))
         """
 
         return [

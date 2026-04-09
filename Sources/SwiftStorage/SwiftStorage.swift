@@ -56,20 +56,23 @@
 /// ```
 /// Use the ``Transient`` macro if there are properties you do not want to preserve. You can also use the [ObservationIgnored](https://developer.apple.com/documentation/observation/observationignored()) macro instead.
 /// Use ``Attribute(_:)`` with `.ephemeral` for properties that should be observed but not persisted.
+///
+/// Set `hashed` to `false` to disable key hashing by default for all properties in the class.
+/// Individual properties can override this with ``Attribute(_:type:key:hashed:)``.
 @attached(
     member,
     names: named(_$id), named(_$observationRegistrar), named(access), named(withMutation), named(className), named(shouldNotifyObservers), named(_$cloudKeys), named(_$cloudNotificationObserver), named(_$startCloudSync), named(_$store), arbitrary
 )
 @attached(memberAttribute)
 @attached(extension, conformances: Observable)
-public macro Storage(type: StorageType = .local) = #externalMacro(module: "SwiftStorageMacros", type: "StorageMacro")
+public macro Storage(type: StorageType = .local, hashed: Bool = true) = #externalMacro(module: "SwiftStorageMacros", type: "StorageMacro")
 
 /// Macro for specifying the property whose value is to be persisted
 ///
 /// This property is automatically added by the Storage macro. It is not necessary to describe it.
 @attached(accessor, names: named(init), named(get), named(set), named(_modify))
 @attached(peer, names: prefixed(_))
-public macro _StoredProperty(type: StorageType = .local) = #externalMacro(module: "SwiftStorageMacros", type: "StoredPropertyMacro")
+public macro _StoredProperty(type: StorageType = .local, hashed: Bool = true) = #externalMacro(module: "SwiftStorageMacros", type: "StoredPropertyMacro")
 /// Macro to customize storage attributes for a property
 /// - Parameters:
 ///  - options: Storage attribute options (e.g., `.ephemeral` for observation-only properties)

@@ -101,8 +101,16 @@ public struct StoredPropertyMacro: AccessorMacro {
             storageType = text
         }
 
-        // Determine whether to hash the key (default: true)
+        // Determine whether to hash the key (class default from @_StoredProperty(hashed:), then @Attribute(hashed:) override)
         var hashed = true
+        if case .argumentList(let args) = node.arguments {
+            for arg in args {
+                if let label = arg.label?.text, label == "hashed",
+                   let boolLiteral = arg.expression.as(BooleanLiteralExprSyntax.self) {
+                    hashed = boolLiteral.literal.tokenKind == .keyword(.true)
+                }
+            }
+        }
         if property.hasMacroApplication(StorageMacro.attributeMacroName),
            let hashedValue = property.attributeBoolValue(for: "hashed") {
             hashed = hashedValue

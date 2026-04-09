@@ -862,18 +862,19 @@ struct CloudStorageTests {
                         return
                     }
                     NSUbiquitousKeyValueStore.default.synchronize()
+                    let _$weakRef = _$WeakSendableRef(self)
                     _$cloudNotificationObserver = NotificationCenter.default.addObserver(
                         forName: NSUbiquitousKeyValueStore.didChangeExternallyNotification,
                         object: NSUbiquitousKeyValueStore.default,
                         queue: .main
-                    ) { @Sendable [weak self] notification in
-                        guard let self,
+                    ) { notification in
+                        guard let _$self = _$weakRef.value,
                         let userInfo = notification.userInfo,
                         let changedKeys = userInfo[NSUbiquitousKeyValueStoreChangedKeysKey] as? [String] else {
                             return
                         }
                         for key in changedKeys {
-                            _ = self._$cloudKeys(key)
+                            _ = _$self._$cloudKeys(key)
                         }
                     }
                 }
@@ -1006,18 +1007,19 @@ struct CloudStorageTests {
                         return
                     }
                     NSUbiquitousKeyValueStore.default.synchronize()
+                    let _$weakRef = _$WeakSendableRef(self)
                     _$cloudNotificationObserver = NotificationCenter.default.addObserver(
                         forName: NSUbiquitousKeyValueStore.didChangeExternallyNotification,
                         object: NSUbiquitousKeyValueStore.default,
                         queue: .main
-                    ) { @Sendable [weak self] notification in
-                        guard let self,
+                    ) { notification in
+                        guard let _$self = _$weakRef.value,
                         let userInfo = notification.userInfo,
                         let changedKeys = userInfo[NSUbiquitousKeyValueStoreChangedKeysKey] as? [String] else {
                             return
                         }
                         for key in changedKeys {
-                            _ = self._$cloudKeys(key)
+                            _ = _$self._$cloudKeys(key)
                         }
                     }
                 }
