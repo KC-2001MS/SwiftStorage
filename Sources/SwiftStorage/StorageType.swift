@@ -9,6 +9,8 @@ public enum StorageType {
     case local
     case localWith(suite: String?)
     case cloud
+    /// Observation only — the property is tracked for changes but not persisted to any storage backend.
+    case ephemeral
 
     public var backend: any StorageBackend {
         switch self {
@@ -21,6 +23,8 @@ public enum StorageType {
             return UserDefaults.standard
         case .cloud:
             return NSUbiquitousKeyValueStore.default
+        case .ephemeral:
+            fatalError("StorageType.ephemeral has no storage backend — ephemeral properties should use @ObservationTracked, not @_StoredProperty.")
         }
     }
 }

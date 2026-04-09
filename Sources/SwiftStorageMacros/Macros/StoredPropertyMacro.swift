@@ -36,6 +36,25 @@ public struct StoredPropertyMacro: AccessorMacro {
         guard let binding = property.bindings.first,
               let _ = binding.typeAnnotation?.type.identifier
         else {
+            context.diagnose(
+                Diagnostic(
+                    node: Syntax(property),
+                    message: StorageDiagnostic(
+                        message: "stored property '\(identifier.text)' requires an explicit type annotation to be persisted by '@Storage'",
+                        domain: "SwiftStorage",
+                        id: .missingTypeAnnotation
+                    ),
+                    notes: [
+                        Note(
+                            node: Syntax(property),
+                            message: StorageNoteMessage(
+                                message: "add a type annotation, e.g. 'var \(identifier.text): <Type>'",
+                                id: "add-type-annotation"
+                            )
+                        )
+                    ]
+                )
+            )
             return []
         }
         

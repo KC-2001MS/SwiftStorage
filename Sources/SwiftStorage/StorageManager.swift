@@ -7,6 +7,12 @@
 
 import Foundation
 
+/// A Sendable wrapper holding a weak reference, used by macro-generated cloud sync code.
+public final class _$WeakSendableRef<T: AnyObject>: @unchecked Sendable {
+    public weak var value: T?
+    public init(_ value: T) { self.value = value }
+}
+
 public protocol StorageBackend: AnyObject {
     func persistedValue<T: Storable>(forKey key: String, default defaultValue: T) -> T
     func persistedValue<T: Codable>(forKey key: String, default defaultValue: T) -> T

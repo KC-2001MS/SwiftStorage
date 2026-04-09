@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		F6759D832F87A68100E94EBE /* AppIcon.icon in Resources */ = {isa = PBXBuildFile; fileRef = F6759D822F87A68100E94EBE /* AppIcon.icon */; };
+		F6759D842F87A68100E94EBE /* AppIcon.icon in Resources */ = {isa = PBXBuildFile; fileRef = F6759D822F87A68100E94EBE /* AppIcon.icon */; };
 		F7240E172C39BE19002CFF9F /* SampleApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7240E162C39BE19002CFF9F /* SampleApp.swift */; };
 		F7240E192C39BE19002CFF9F /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7240E182C39BE19002CFF9F /* ContentView.swift */; };
 		F7240E1B2C39BE1B002CFF9F /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = F7240E1A2C39BE1B002CFF9F /* Assets.xcassets */; };
@@ -47,6 +49,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		F6759D822F87A68100E94EBE /* AppIcon.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.iconcomposer.icon; path = AppIcon.icon; sourceTree = "<group>"; };
 		F7240E132C39BE19002CFF9F /* Sample.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Sample.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		F7240E162C39BE19002CFF9F /* SampleApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SampleApp.swift; sourceTree = "<group>"; };
 		F7240E182C39BE19002CFF9F /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -103,6 +106,7 @@
 				F7240E182C39BE19002CFF9F /* ContentView.swift */,
 				F798E1342C39CA1B007B276B /* SettingsObject.swift */,
 				F7240E1A2C39BE1B002CFF9F /* Assets.xcassets */,
+				F6759D822F87A68100E94EBE /* AppIcon.icon */,
 				F79432E52C3C455700329C86 /* PrivacyInfo.xcprivacy */,
 				F7240E1C2C39BE1B002CFF9F /* Sample.entitlements */,
 				F7240E1D2C39BE1B002CFF9F /* Preview Content */,
@@ -178,7 +182,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 1600;
-				LastUpgradeCheck = 1610;
+				LastUpgradeCheck = 2640;
 				TargetAttributes = {
 					F7240E122C39BE19002CFF9F = {
 						CreatedOnToolsVersion = 16.0;
@@ -212,6 +216,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				F6759D842F87A68100E94EBE /* AppIcon.icon in Resources */,
 				F79432E62C3C455700329C86 /* PrivacyInfo.xcprivacy in Resources */,
 				F7240E1F2C39BE1B002CFF9F /* Preview Assets.xcassets in Resources */,
 				F7240E1B2C39BE1B002CFF9F /* Assets.xcassets in Resources */,
@@ -222,6 +227,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				F6759D832F87A68100E94EBE /* AppIcon.icon in Resources */,
 				F79433002C3C59C700329C86 /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -297,6 +303,7 @@
 				COPY_PHASE_STRIP = NO;
 				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = 7AA87AZ875;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
@@ -318,6 +325,7 @@
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
@@ -359,6 +367,7 @@
 				COPY_PHASE_STRIP = NO;
 				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = 7AA87AZ875;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
@@ -373,6 +382,7 @@
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
 			};
 			name = Release;
@@ -387,7 +397,6 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_ASSET_PATHS = "\"Sample/Preview Content\"";
-				DEVELOPMENT_TEAM = 7AA87AZ875;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -430,7 +439,6 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_ASSET_PATHS = "\"Sample/Preview Content\"";
-				DEVELOPMENT_TEAM = 7AA87AZ875;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -471,7 +479,6 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"Sample/Preview Content\"";
-				DEVELOPMENT_TEAM = 7AA87AZ875;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = "Sample for watchOS";
@@ -501,7 +508,6 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"Sample/Preview Content\"";
-				DEVELOPMENT_TEAM = 7AA87AZ875;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = "Sample for watchOS";

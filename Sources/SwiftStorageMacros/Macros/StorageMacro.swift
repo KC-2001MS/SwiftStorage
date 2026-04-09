@@ -169,10 +169,14 @@ public struct StorageMacro {
     }
 }
 
-struct ObservationDiagnostic: DiagnosticMessage {
+struct StorageDiagnostic: DiagnosticMessage {
     enum ID: String {
         case invalidApplication = "invalid type"
         case missingInitializer = "missing initializer"
+        case appliedToEnum = "applied to enum"
+        case appliedToStruct = "applied to struct"
+        case appliedToActor = "applied to actor"
+        case missingTypeAnnotation = "missing type annotation"
     }
     
     var message: String
@@ -201,24 +205,48 @@ struct ObservationDiagnostic: DiagnosticMessage {
     }
 }
 
+struct StorageFixItMessage: FixItMessage {
+    var message: String
+    var fixItID: MessageID
+
+    init(message: String, domain: String = "SwiftStorage", id: String) {
+        self.message = message
+        self.fixItID = MessageID(domain: domain, id: id)
+    }
+}
+
+struct StorageNoteMessage: NoteMessage {
+    var message: String
+    var noteID: MessageID
+
+    init(message: String, domain: String = "SwiftStorage", id: String) {
+        self.message = message
+        self.noteID = MessageID(domain: domain, id: id)
+    }
+}
+
 extension DiagnosticsError {
     init<S: SyntaxProtocol>(
         syntax: S,
         message: String,
-        domain: String = "Strage",
-        id: ObservationDiagnostic.ID,
-        severity: SwiftDiagnostics.DiagnosticSeverity = .error
+        domain: String = "SwiftStorage",
+        id: StorageDiagnostic.ID,
+        severity: SwiftDiagnostics.DiagnosticSeverity = .error,
+        notes: [Note] = [],
+        fixIts: [FixIt] = []
     ) {
         self.init(
             diagnostics: [
                 Diagnostic(
                     node: Syntax(syntax),
-                    message: ObservationDiagnostic(
+                    message: StorageDiagnostic(
                         message: message,
                         domain: domain,
                         id: id,
                         severity: severity
-                    )
+                    ),
+                    notes: notes,
+                    fixIts: fixIts
                 )
             ]
         )
@@ -361,35 +389,77 @@ extension StorageMacro: MemberMacro {
             return []
         }
         
-        guard let property = declaration.as(ClassDeclSyntax.self) else {
-            return []
-        }
-        
         let storageType = identified.name.trimmed
         
         if declaration.isEnum {
-            // enumerations cannot store properties
-            throw DiagnosticsError(
-                syntax: node,
-                message: "'@Storage' cannot be applied to enumeration type '\(storageType.text)'",
-                id: .invalidApplication
+            context.diagnose(
+                Diagnostic(
+                    node: Syntax(node),
+                    message: StorageDiagnostic(
+                        message: "'@Storage' cannot be applied to enumeration type '\(storageType.text)' because enumerations cannot store properties",
+                        domain: "SwiftStorage",
+                        id: .appliedToEnum
+                    ),
+                    notes: [
+                        Note(
+                            node: Syntax(node),
+                            message: StorageNoteMessage(
+                                message: "use a class instead of an enumeration",
+                                id: "use-class-instead"
+                            )
+                        )
+                    ]
+                )
             )
+            return []
         }
         if declaration.isStruct {
-            // structs are not yet supported; copying/mutation semantics tbd
-            throw DiagnosticsError(
-                syntax: node,
-                message: "'@Storage' cannot be applied to struct type '\(storageType.text)'",
-                id: .invalidApplication
+            context.diagnose(
+                Diagnostic(
+                    node: Syntax(node),
+                    message: StorageDiagnostic(
+                        message: "'@Storage' cannot be applied to struct type '\(storageType.text)' because structs use value semantics, which is incompatible with observation and persistence",
+                        domain: "SwiftStorage",
+                        id: .appliedToStruct
+                    ),
+                    notes: [
+                        Note(
+                            node: Syntax(node),
+                            message: StorageNoteMessage(
+                                message: "use a class instead of a struct",
+                                id: "use-class-instead"
+                            )
+                        )
+                    ]
+                )
             )
+            return []
         }
         if declaration.isActor {
-            // actors cannot yet be supported for their isolation
-            throw DiagnosticsError(
-                syntax: node,
-                message: "'@Storage' cannot be applied to actor type '\(storageType.text)'",
-                id: .invalidApplication
+            context.diagnose(
+                Diagnostic(
+                    node: Syntax(node),
+                    message: StorageDiagnostic(
+                        message: "'@Storage' cannot be applied to actor type '\(storageType.text)' because actor isolation is not yet supported",
+                        domain: "SwiftStorage",
+                        id: .appliedToActor
+                    ),
+                    notes: [
+                        Note(
+                            node: Syntax(node),
+                            message: StorageNoteMessage(
+                                message: "use a class instead of an actor",
+                                id: "use-class-instead"
+                            )
+                        )
+                    ]
+                )
             )
+            return []
+        }
+        
+        guard let property = declaration.as(ClassDeclSyntax.self) else {
+            return []
         }
         
         var declarations = [DeclSyntax]()
@@ -532,16 +602,17 @@ extension StorageMacro: MemberMacro {
             private func _$startCloudSync() {
             guard _$cloudNotificationObserver == nil else { return }
             NSUbiquitousKeyValueStore.default.synchronize()
+            let _$weakRef = _$WeakSendableRef(self)
             _$cloudNotificationObserver = NotificationCenter.default.addObserver(
             forName: NSUbiquitousKeyValueStore.didChangeExternallyNotification,
             object: NSUbiquitousKeyValueStore.default,
             queue: .main
-            ) { @Sendable [weak self] notification in
-            guard let self,
+            ) { notification in
+            guard let _$self = _$weakRef.value,
             let userInfo = notification.userInfo,
             let changedKeys = userInfo[NSUbiquitousKeyValueStoreChangedKeysKey] as? [String] else { return }
             for key in changedKeys {
-            _ = self._$cloudKeys(key)
+            _ = _$self._$cloudKeys(key)
             }
             }
             }
@@ -552,16 +623,18 @@ extension StorageMacro: MemberMacro {
             declarations.append(syncFuncDecl)
         }
 
-        // Generate unified _$store variable for class default backend
+        // Generate unified _$store variable for class default backend (skip for ephemeral)
         // Wrap in parentheses to handle complex expressions (ternary, function calls, etc.)
         // and qualify member access expressions (e.g. ".local" → "StorageType.local") since the
         // explicit type annotation `any StorageBackend` prevents implicit resolution.
-        let qualifiedClassTypeExpr = classDefaultTypeExpr.hasPrefix(".") ? "StorageType\(classDefaultTypeExpr)" : classDefaultTypeExpr
-        let classStoreDecl: DeclSyntax =
-        """
-        @\(raw: transientMacroName) private let _$store: any StorageBackend = (\(raw: qualifiedClassTypeExpr)).backend
-        """
-        declarations.append(classStoreDecl)
+        if classDefaultTypeExpr != ".ephemeral" {
+            let qualifiedClassTypeExpr = classDefaultTypeExpr.hasPrefix(".") ? "StorageType\(classDefaultTypeExpr)" : classDefaultTypeExpr
+            let classStoreDecl: DeclSyntax =
+            """
+            @\(raw: transientMacroName) private let _$store: any StorageBackend = (\(raw: qualifiedClassTypeExpr)).backend
+            """
+            declarations.append(classStoreDecl)
+        }
 
         // Generate per-property _$store_<name> for @Attribute(type:) overrides
         for member in declaration.memberBlock.members {
@@ -577,7 +650,8 @@ extension StorageMacro: MemberMacro {
                 continue
             }
             if varDecl.hasMacroApplication(StorageMacro.attributeMacroName),
-               let typeText = varDecl.attributeTypeValue(for: "type") {
+               let typeText = varDecl.attributeTypeValue(for: "type"),
+               typeText != ".ephemeral" {
                 let qualifiedTypeText = typeText.hasPrefix(".") ? "StorageType\(typeText)" : typeText
                 let propStoreDecl: DeclSyntax =
                 """
@@ -602,6 +676,11 @@ extension StorageMacro: MemberAttributeMacro {
         providingAttributesFor member: MemberDeclaration,
         in context: Context
     ) throws -> [AttributeSyntax] {
+        // Skip expansion for non-class types (diagnostics are emitted by MemberMacro)
+        guard declaration.isClass else {
+            return []
+        }
+
         guard let property = member.as(VariableDeclSyntax.self),
               property.isValidForObservation,
               property.identifier != nil
@@ -644,6 +723,22 @@ extension StorageMacro: MemberAttributeMacro {
             break
         }
 
+        // Determine effective type: per-property @Attribute(type:) overrides class default
+        var effectiveType = typeValue
+        if property.hasMacroApplication(StorageMacro.attributeMacroName),
+           let overrideType = property.attributeTypeValue(for: "type") {
+            effectiveType = overrideType
+        }
+
+        // Effective type .ephemeral → observation only, no persistence
+        if effectiveType == ".ephemeral" {
+            let trackedAttribute: AttributeSyntax =
+            """
+            @\(IdentifierTypeSyntax(name: .identifier(StorageMacro.observationTrackedMacroName)))
+            """
+            return [trackedAttribute]
+        }
+
         let attribute: AttributeSyntax =
         """
         @\(IdentifierTypeSyntax(name: .identifier(StorageMacro.storedPropertyMacroName)))(type: \(raw: typeValue))
@@ -663,6 +758,11 @@ extension StorageMacro: ExtensionMacro {
         conformingTo protocols: [TypeSyntax],
         in context: some MacroExpansionContext
     ) throws -> [ExtensionDeclSyntax] {
+        // Skip expansion for non-class types (diagnostics are emitted by MemberMacro)
+        guard declaration.isClass else {
+            return []
+        }
+
         // This method can be called twice - first with an empty `protocols` when
         // no conformance is needed, and second with a `MissingTypeSyntax` instance.
         if protocols.isEmpty {

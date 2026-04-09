@@ -22,7 +22,7 @@ extension Tag {
     @Tag static var normalBehavior: Self
 }
 
-let testMacros: [String: Macro.Type] = [
+nonisolated(unsafe) let testMacros: [String: Macro.Type] = [
     "Storage": StorageMacro.self,
     "_StoredProperty": StoredPropertyMacro.self,
     "Attribute": AttributeMacro.self,
@@ -1105,6 +1105,88 @@ struct CloudStorageTests {
 
                 private let _$store: any StorageBackend = (StorageType.local).backend
             }
+            """
+        }
+    }
+}
+
+@Suite("Diagnostic Testing", .tags(.storage))
+struct DiagnosticTests {
+    @Test("Does @Storage on enum produce an error?")
+    func storageOnEnumTest() async throws {
+        assertMacro(testMacros) {
+            """
+            @Storage
+            enum TestEnum {
+                case a
+            }
+            """
+        } diagnostics: {
+            """
+            @Storage
+            ┬───────
+            ╰─ 🛑 '@Storage' cannot be applied to enumeration type 'TestEnum' because enumerations cannot store properties
+            enum TestEnum {
+                case a
+            }
+            """
+        }
+    }
+
+    @Test("Does @Storage on struct produce an error?")
+    func storageOnStructTest() async throws {
+        assertMacro(testMacros) {
+            """
+            @Storage
+            struct TestStruct {
+                var value: Bool = false
+            }
+            """
+        } diagnostics: {
+            """
+            @Storage
+            ┬───────
+            ╰─ 🛑 '@Storage' cannot be applied to struct type 'TestStruct' because structs use value semantics, which is incompatible with observation and persistence
+            struct TestStruct {
+                var value: Bool = false
+            }
+            """
+        }
+    }
+
+    @Test("Does @Storage on actor produce an error?")
+    func storageOnActorTest() async throws {
+        assertMacro(testMacros) {
+            """
+            @Storage
+            actor TestActor {
+                var value: Bool = false
+            }
+            """
+        } diagnostics: {
+            """
+            @Storage
+            ┬───────
+            ╰─ 🛑 '@Storage' cannot be applied to actor type 'TestActor' because actor isolation is not yet supported
+            actor TestActor {
+                var value: Bool = false
+            }
+            """
+        }
+    }
+
+    @Test("Does a stored property without type annotation produce an error?")
+    func storedPropertyWithoutTypeAnnotationTest() async throws {
+        assertMacro(testMacros) {
+            """
+            @_StoredProperty
+            var value = false
+            """
+        } diagnostics: {
+            """
+            @_StoredProperty
+            ╰─ 🛑 stored property 'value' requires an explicit type annotation to be persisted by '@Storage'
+            var value = false
             """
         }
     }
