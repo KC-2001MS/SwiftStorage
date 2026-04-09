@@ -15,7 +15,7 @@ import SwiftSyntaxMacros
 struct SwiftStoragePlugin: CompilerPlugin {
     let providingMacros: [Macro.Type] = [
         StorageMacro.self,
-        LocalStoragePropertyMacro.self,
+        StoredPropertyMacro.self,
         TransientMacro.self,
         AttributeMacro.self,
     ]

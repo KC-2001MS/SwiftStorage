@@ -48,14 +48,14 @@ public struct StorageMacro {
     }
     
     
-    static let localStoragePropertyMacroName = "LocalStorageProperty"
+    static let storedPropertyMacroName = "_StoredProperty"
     
     static let observationTrackedMacroName = "ObservationTracked"
     
     static let transientMacroName = "Transient"
     
     static let observationIgnoredMacroName = "ObservationIgnored"
-    
+
     static let attributeMacroName = "Attribute"
     
     static let registrarVariableName = "_$observationRegistrar"
@@ -94,6 +94,34 @@ public struct StorageMacro {
         return
       """
       @\(raw: transientMacroName) private let className = "\(raw: name)"
+      """
+    }
+
+    static func shouldNotifyObserversFunction() -> DeclSyntax {
+        return
+      """
+      private nonisolated func shouldNotifyObservers<Member>(_ lhs: Member, _ rhs: Member) -> Bool { true }
+      """
+    }
+
+    static func shouldNotifyObserversEquatableFunction() -> DeclSyntax {
+        return
+      """
+      private nonisolated func shouldNotifyObservers<Member: Equatable>(_ lhs: Member, _ rhs: Member) -> Bool { lhs != rhs }
+      """
+    }
+
+    static func shouldNotifyObserversAnyObjectFunction() -> DeclSyntax {
+        return
+      """
+      private nonisolated func shouldNotifyObservers<Member: AnyObject>(_ lhs: Member, _ rhs: Member) -> Bool { lhs !== rhs }
+      """
+    }
+
+    static func shouldNotifyObserversEquatableAnyObjectFunction() -> DeclSyntax {
+        return
+      """
+      private nonisolated func shouldNotifyObservers<Member: Equatable & AnyObject>(_ lhs: Member, _ rhs: Member) -> Bool { lhs != rhs }
       """
     }
     
@@ -289,6 +317,31 @@ extension VariableDeclSyntax {
             trailingTrivia: trailingTrivia
         )
     }
+
+    func privatePrefixed(_ prefix: String, addingAttribute attribute: AttributeSyntax, removingAttribute name: String) -> VariableDeclSyntax {
+        let filteredAttributes = attributes.filter { attr in
+            switch attr {
+            case .attribute(let a):
+                return a.attributeName.tokens(viewMode: .all).map({ $0.tokenKind }) != [.identifier(name)]
+            default:
+                return true
+            }
+        }
+        let newAttributes = filteredAttributes + [.attribute(attribute)]
+        return VariableDeclSyntax(
+            leadingTrivia: leadingTrivia,
+            attributes: newAttributes,
+            modifiers: modifiers.privatePrefixed(prefix),
+            bindingSpecifier: TokenSyntax(
+                bindingSpecifier.tokenKind,
+                leadingTrivia: .space,
+                trailingTrivia: .space,
+                presence: .present
+            ),
+            bindings: bindings.privatePrefixed(prefix),
+            trailingTrivia: trailingTrivia
+        )
+    }
     
     var isValidForObservation: Bool {
         !isComputed && isInstance && !isImmutable && identifier != nil
@@ -340,7 +393,7 @@ extension StorageMacro: MemberMacro {
         }
         
         var declarations = [DeclSyntax]()
-        
+
         declaration
             .addIfNeeded(
                 StorageMacro.registrarVariable(storageType),
@@ -361,13 +414,179 @@ extension StorageMacro: MemberMacro {
                 StorageMacro.classNameVariable(property.name.text),
                 to: &declarations
             )
-        
-//        declaration
-//            .addIfNeeded(
-//                StorageMacro.loadFunction(declaration: declaration),
-//                to: &declarations
-//            )
-        
+        declaration
+            .addIfNeeded(
+                StorageMacro.shouldNotifyObserversFunction(),
+                to: &declarations
+            )
+        declaration
+            .addIfNeeded(
+                StorageMacro.shouldNotifyObserversEquatableFunction(),
+                to: &declarations
+            )
+        declaration
+            .addIfNeeded(
+                StorageMacro.shouldNotifyObserversAnyObjectFunction(),
+                to: &declarations
+            )
+        declaration
+            .addIfNeeded(
+                StorageMacro.shouldNotifyObserversEquatableAnyObjectFunction(),
+                to: &declarations
+            )
+
+        // Parse class default storage type expression from @Storage(type:) arguments
+        var classDefaultTypeExpr: String = ".local"
+        switch node.arguments {
+        case .argumentList(let args):
+            for arg in args {
+                if let label = arg.label?.text, label == "type" {
+                    classDefaultTypeExpr = arg.expression.description.trimmingCharacters(in: .whitespacesAndNewlines)
+                }
+            }
+        default:
+            break
+        }
+
+        // Collect cloud properties for sync code generation
+        let className = property.name.text
+        var cloudProperties: [(identifier: String, keyExpression: String)] = []
+
+        for member in declaration.memberBlock.members {
+            guard let varDecl = member.decl.as(VariableDeclSyntax.self),
+                  varDecl.isValidForObservation,
+                  let identifier = varDecl.identifier?.text else {
+                continue
+            }
+
+            // Skip non-persisted properties
+            if varDecl.hasMacroApplication(StorageMacro.transientMacroName) ||
+               varDecl.hasMacroApplication(StorageMacro.observationIgnoredMacroName) ||
+               varDecl.hasMacroApplication(StorageMacro.observationTrackedMacroName) ||
+               varDecl.hasAttributeOption("ephemeral") {
+                continue
+            }
+
+            // Determine effective storage type
+            var effectiveType = classDefaultTypeExpr
+            if varDecl.hasMacroApplication(StorageMacro.attributeMacroName),
+               let typeText = varDecl.attributeTypeValue(for: "type") {
+                effectiveType = typeText
+            }
+
+            guard effectiveType == ".cloud" else { continue }
+
+            // Determine key
+            var key = "\(className).\(identifier)"
+            if varDecl.hasMacroApplication(StorageMacro.attributeMacroName),
+               let customKey = varDecl.attributeStringValue(for: "key") {
+                key = customKey
+            }
+
+            // Determine hashing
+            var hashed = true
+            if varDecl.hasMacroApplication(StorageMacro.attributeMacroName),
+               let hashedValue = varDecl.attributeBoolValue(for: "hashed") {
+                hashed = hashedValue
+            }
+
+            let keyExpression: String
+            if hashed {
+                keyExpression = "#hashify(\"\(key)\")"
+            } else {
+                keyExpression = "\"\(key)\""
+            }
+
+            cloudProperties.append((identifier: identifier, keyExpression: keyExpression))
+        }
+
+        // Generate cloud sync code if any cloud properties exist
+        if !cloudProperties.isEmpty {
+            let cases = cloudProperties.map { prop in
+                """
+                case \(prop.keyExpression):
+                \(registrarVariableName).willSet(self, keyPath: \\.\(prop.identifier))
+                \(registrarVariableName).didSet(self, keyPath: \\.\(prop.identifier))
+                """
+            }.joined(separator: "\n")
+
+            let cloudKeysDecl: DeclSyntax =
+            """
+            private func _$cloudKeys(_ key: String) -> Bool {
+            switch key {
+            \(raw: cases)
+            default:
+            return false
+            }
+            return true
+            }
+            """
+
+            let observerDecl: DeclSyntax =
+            """
+            @\(raw: transientMacroName) private var _$cloudNotificationObserver: (any NSObjectProtocol)? = nil
+            """
+
+            let syncFuncDecl: DeclSyntax =
+            """
+            private func _$startCloudSync() {
+            guard _$cloudNotificationObserver == nil else { return }
+            NSUbiquitousKeyValueStore.default.synchronize()
+            _$cloudNotificationObserver = NotificationCenter.default.addObserver(
+            forName: NSUbiquitousKeyValueStore.didChangeExternallyNotification,
+            object: NSUbiquitousKeyValueStore.default,
+            queue: .main
+            ) { @Sendable [weak self] notification in
+            guard let self,
+            let userInfo = notification.userInfo,
+            let changedKeys = userInfo[NSUbiquitousKeyValueStoreChangedKeysKey] as? [String] else { return }
+            for key in changedKeys {
+            _ = self._$cloudKeys(key)
+            }
+            }
+            }
+            """
+
+            declarations.append(cloudKeysDecl)
+            declarations.append(observerDecl)
+            declarations.append(syncFuncDecl)
+        }
+
+        // Generate unified _$store variable for class default backend
+        // Wrap in parentheses to handle complex expressions (ternary, function calls, etc.)
+        // and qualify member access expressions (e.g. ".local" → "StorageType.local") since the
+        // explicit type annotation `any StorageBackend` prevents implicit resolution.
+        let qualifiedClassTypeExpr = classDefaultTypeExpr.hasPrefix(".") ? "StorageType\(classDefaultTypeExpr)" : classDefaultTypeExpr
+        let classStoreDecl: DeclSyntax =
+        """
+        @\(raw: transientMacroName) private let _$store: any StorageBackend = (\(raw: qualifiedClassTypeExpr)).backend
+        """
+        declarations.append(classStoreDecl)
+
+        // Generate per-property _$store_<name> for @Attribute(type:) overrides
+        for member in declaration.memberBlock.members {
+            guard let varDecl = member.decl.as(VariableDeclSyntax.self),
+                  varDecl.isValidForObservation,
+                  let identifier = varDecl.identifier?.text else {
+                continue
+            }
+            if varDecl.hasMacroApplication(StorageMacro.transientMacroName) ||
+               varDecl.hasMacroApplication(StorageMacro.observationIgnoredMacroName) ||
+               varDecl.hasMacroApplication(StorageMacro.observationTrackedMacroName) ||
+               varDecl.hasAttributeOption("ephemeral") {
+                continue
+            }
+            if varDecl.hasMacroApplication(StorageMacro.attributeMacroName),
+               let typeText = varDecl.attributeTypeValue(for: "type") {
+                let qualifiedTypeText = typeText.hasPrefix(".") ? "StorageType\(typeText)" : typeText
+                let propStoreDecl: DeclSyntax =
+                """
+                @\(raw: transientMacroName) private let _$store_\(raw: identifier): any StorageBackend = (\(raw: qualifiedTypeText)).backend
+                """
+                declarations.append(propStoreDecl)
+            }
+        }
+
         return declarations
     }
 }
@@ -395,60 +614,43 @@ extension StorageMacro: MemberAttributeMacro {
             property
             .hasMacroApplication(StorageMacro.observationIgnoredMacroName) ||
             property
-            .hasMacroApplication(StorageMacro.localStoragePropertyMacroName) ||
+            .hasMacroApplication(StorageMacro.storedPropertyMacroName) ||
             property
             .hasMacroApplication(StorageMacro.observationTrackedMacroName) {
             return []
         }
-        
-        //        var typeValue: String = ".local"
-        //        
-        //        switch node.arguments {
-        //        case .argumentList(let args):
-        //            // 引数リストから目的のキーに一致する値を検索
-        //            for arg in args {
-        //                if let label = arg.label?.text, label == "type" {
-        //                    // mode 引数を解析
-        //                    if let enumCaseExpr = arg.expression.as(
-        //                        MemberAccessExprSyntax.self
-        //                    ) {
-        //                        // `.localWith(type: nil)` を文字列として取得
-        //                        let enumCaseString = enumCaseExpr.description.trimmingCharacters(
-        //                            in: .whitespacesAndNewlines
-        //                        )
-        //                        typeValue = enumCaseString
-        //                    }
-        //                    
-        //                    if let enumCaseExpr = arg.expression.as(
-        //                        FunctionCallExprSyntax.self
-        //                    ) {
-        //                        // `.local` を文字列として取得
-        //                        let enumCaseString = enumCaseExpr.description.trimmingCharacters(
-        //                            in: .whitespacesAndNewlines
-        //                        )
-        //                        typeValue = enumCaseString
-        //                    }
-        //                }
-        //            }
-        //        default:
-        //            break
-        //        }
-        //        
-        //        let attribute: AttributeSyntax =
-        //        """
-        //        @\(IdentifierTypeSyntax(name: .identifier(StorageMacro.localStoragePropertyMacroName)))(type: \(raw: typeValue))
-        //        """
-        
+
+        // @Attribute(.ephemeral) → apply @ObservationTracked instead of @_StoredProperty
+        if property.hasAttributeOption("ephemeral") {
+            let trackedAttribute: AttributeSyntax =
+            """
+            @\(IdentifierTypeSyntax(name: .identifier(StorageMacro.observationTrackedMacroName)))
+            """
+            return [trackedAttribute]
+        }
+
+        var typeValue: String = ".local"
+
+        switch node.arguments {
+        case .argumentList(let args):
+            for arg in args {
+                if let label = arg.label?.text, label == "type" {
+                    typeValue = arg.expression.description.trimmingCharacters(
+                        in: .whitespacesAndNewlines
+                    )
+                }
+            }
+        default:
+            break
+        }
+
+        let attribute: AttributeSyntax =
+        """
+        @\(IdentifierTypeSyntax(name: .identifier(StorageMacro.storedPropertyMacroName)))(type: \(raw: typeValue))
+        """
+
         return [
-            //            attribute
-            AttributeSyntax(
-                attributeName: IdentifierTypeSyntax(
-                    name: 
-                            .identifier(
-                                StorageMacro.localStoragePropertyMacroName
-                            )
-                )
-            )
+            attribute
         ]
     }
 }

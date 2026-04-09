@@ -7,62 +7,54 @@
 
 import Foundation
 
-public class StorageManager {
-    var type: StorageType
-    
-    var key: String
-    
-    public init(type: StorageType, key: String) {
-        self.type = type
-        self.key = key
+public protocol StorageBackend: AnyObject {
+    func persistedValue<T: Storable>(forKey key: String, default defaultValue: T) -> T
+    func persistedValue<T: Codable>(forKey key: String, default defaultValue: T) -> T
+    func setPersisted<T: Storable>(_ value: T, forKey key: String)
+    func setPersisted<T: Codable>(_ value: T, forKey key: String)
+}
+
+extension UserDefaults: StorageBackend {}
+extension NSUbiquitousKeyValueStore: StorageBackend {}
+
+extension UserDefaults {
+    public func persistedValue<T: Storable>(forKey key: String, default defaultValue: T) -> T {
+        value(forKey: key) as? T ?? defaultValue
     }
-    
-    public func set<T: Storable>(value: T) {
-        switch type {
-        case .local:
-            UserDefaults.standard.set(value, forKey: key)
-        case .localWith(let suite):
-            UserDefaults(suiteName: suite)?.set(value, forKey: key)
-//        case .cloud:
-//            NSUbiquitousKeyValueStore.default.set(value, forKey: key)
+
+    public func persistedValue<T: Codable>(forKey key: String, default defaultValue: T) -> T {
+        guard let data = value(forKey: key) as? Data else { return defaultValue }
+        return (try? JSONDecoder().decode(T.self, from: data)) ?? defaultValue
+    }
+
+    public func setPersisted<T: Storable>(_ value: T, forKey key: String) {
+        set(value, forKey: key)
+    }
+
+    public func setPersisted<T: Codable>(_ value: T, forKey key: String) {
+        if let data = try? JSONEncoder().encode(value) {
+            set(data, forKey: key)
         }
     }
-    
-    public func set<T: Codable>(value: T) {
-        let data = try? JSONEncoder().encode(value)
-        switch type {
-        case .local:
-            UserDefaults.standard.set(data, forKey: key)
-        case .localWith(let suite):
-            UserDefaults(suiteName: suite)?.set(data, forKey: key)
-//        case .cloud:
-//            NSUbiquitousKeyValueStore.default.set(value, forKey: key)
-        }
+}
+
+extension NSUbiquitousKeyValueStore {
+    public func persistedValue<T: Storable>(forKey key: String, default defaultValue: T) -> T {
+        object(forKey: key) as? T ?? defaultValue
     }
-    
-    public func get<T: Storable>(defaultValue: T) -> T {
-        switch type {
-        case .local:
-            return UserDefaults.standard.value(forKey: key) as? T ?? defaultValue
-        case .localWith(let suite):
-            return UserDefaults(suiteName: suite)?.value(forKey: key) as? T ?? defaultValue
-//        case .cloud:
-//            return NSUbiquitousKeyValueStore.default.value(forKey: key) as? T ?? defaultValue
-        }
+
+    public func persistedValue<T: Codable>(forKey key: String, default defaultValue: T) -> T {
+        guard let data = data(forKey: key) else { return defaultValue }
+        return (try? JSONDecoder().decode(T.self, from: data)) ?? defaultValue
     }
-    
-    public func get<T: Codable>(defaultValue: T) -> T {
-        let data: Data
-        switch type {
-        case .local:
-            data = UserDefaults.standard.value(forKey: key) as? Data ?? Data()
-        case .localWith(let suite):
-            data = UserDefaults(suiteName: suite)?.value(forKey: key) as? Data ?? Data()
-//        case .cloud:
-//            value = NSUbiquitousKeyValueStore.default.value(forKey: key) as? Data ?? Data()
+
+    public func setPersisted<T: Storable>(_ value: T, forKey key: String) {
+        set(value, forKey: key)
+    }
+
+    public func setPersisted<T: Codable>(_ value: T, forKey key: String) {
+        if let data = try? JSONEncoder().encode(value) {
+            set(data, forKey: key)
         }
-        
-        let value = try? JSONDecoder().decode(T.self, from: data)
-        return value ?? defaultValue
     }
 }

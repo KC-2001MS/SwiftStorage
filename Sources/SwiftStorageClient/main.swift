@@ -23,6 +23,10 @@ final class Client {
             print("Date: \(date)")
             attribute.toggle()
             print("Attribute: \(attribute)")
+            observed.toggle()
+            print("Observed: \(observed)")
+            observationTracked.toggle()
+            print("ObservationTracked: \(observationTracked)")
             transient.toggle()
             print("Transient: \(transient)")
             observationIgnored.toggle()
@@ -41,11 +45,15 @@ final class Client {
     var date: Date
     @Attribute(key: "Attribute")
     var attribute: Bool
+    @Attribute(.ephemeral)
+    var observed: Bool
+    @ObservationTracked
+    var observationTracked: Bool
     @Transient
     var transient: Bool
     @ObservationIgnored
     var observationIgnored: Bool
-    
+
     init() {
         self.bool = false
         self.int = 1
@@ -54,6 +62,8 @@ final class Client {
         self.string = ""
         self.date = Date.now
         self.attribute = false
+        self.observed = false
+        self.observationTracked = false
         self.transient = false
         self.observationIgnored = false
     }

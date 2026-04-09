@@ -9,7 +9,8 @@ import SwiftUI
 
 struct ContentView: View {
     @State private var settings = SettingsObject()
-    
+    @State private var cloudSettings = CloudSettingsObject()
+
     var body: some View {
         NavigationStack {
             Form {
@@ -48,20 +49,20 @@ struct ContentView: View {
                 
                 Section {
                     Toggle("Sample Bool", isOn: $settings.sampleBool)
-                    
+
 #if !os(tvOS)
                     Stepper("Sample Int: \(settings.sampleInt)", value: $settings.sampleInt)
-                    
+
                     Slider(value: $settings.sampleDouble, in: 0...10) {
                         Text("Sample Double: \(settings.sampleDouble)")
                     }
-                    
+
                     Slider(value: $settings.sampleFloat, in: 0...10) {
                         Text("Sample Float: \(settings.sampleFloat)")
                     }
                     #endif
                     TextField("Sample String", text: $settings.sampleString)
-                    
+
 #if !os(tvOS)
                     DatePicker(
                             "Sample Date",
@@ -71,6 +72,40 @@ struct ContentView: View {
 #endif
                 } header: {
                     Text("Sample Data")
+                }
+
+                Section {
+                    Toggle("@Attribute (Custom Key + Suite)", isOn: $settings.attribute)
+
+                    Toggle("@Attribute (hashed: false)", isOn: $settings.unhashed)
+
+                    Toggle("@Observed (Observation Only)", isOn: $settings.observed)
+
+                    Toggle("@ObservationTracked (Standard)", isOn: $settings.observationTracked)
+
+                    Toggle("@Transient (No Observation, No Persistence)", isOn: $settings.transient)
+
+                    Toggle("@ObservationIgnored", isOn: $settings.observationIgnored)
+                } header: {
+                    Text("Property Macros")
+                }
+
+                Section {
+                    Toggle("Cloud Bool", isOn: $cloudSettings.cloudBool)
+
+                    TextField("Cloud String", text: $cloudSettings.cloudString)
+
+#if !os(tvOS)
+                    Stepper("Cloud Int: \(cloudSettings.cloudInt)", value: $cloudSettings.cloudInt)
+
+                    Slider(value: $cloudSettings.cloudDouble, in: 0...10) {
+                        Text("Cloud Double: \(cloudSettings.cloudDouble)")
+                    }
+#endif
+
+                    Toggle("Local Override (stored locally)", isOn: $cloudSettings.localOverride)
+                } header: {
+                    Text("Cloud Storage (iCloud KVS)")
                 }
             }
             .formStyle(.grouped)

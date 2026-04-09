@@ -106,6 +106,30 @@ extension VariableDeclSyntax {
         }
         return false
     }
+
+    func hasAttributeOption(_ option: String) -> Bool {
+        for attribute in attributes {
+            switch attribute {
+            case .attribute(let attr):
+                if attr.attributeName.tokens(viewMode: .all).map({ $0.tokenKind }) == [.identifier(StorageMacro.attributeMacroName)] {
+                    switch attr.arguments {
+                    case .argumentList(let args):
+                        for arg in args where arg.label == nil {
+                            if let memberAccess = arg.expression.as(MemberAccessExprSyntax.self),
+                               memberAccess.declName.baseName.text == option {
+                                return true
+                            }
+                        }
+                    default:
+                        break
+                    }
+                }
+            default:
+                break
+            }
+        }
+        return false
+    }
 }
 
 extension TypeSyntax {
