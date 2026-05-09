@@ -124,6 +124,14 @@ public protocol StorageBackend: AnyObject {
     ///   - source: The key to copy from.
     ///   - destination: The key to copy to. Any existing value is overwritten.
     func copyRawValue(fromKey source: String, toKey destination: String)
+
+    /// Returns all keys currently stored in the backend.
+    ///
+    /// This method is used by ``StorageMigrationContext/renameSuite(from:to:)``
+    /// to discover keys that match a given suite prefix during schema migrations.
+    ///
+    /// - Returns: An array of all stored key names.
+    func allKeys() -> [String]
 }
 
 extension UserDefaults: StorageBackend {}
@@ -161,6 +169,10 @@ extension UserDefaults {
         guard let value = object(forKey: source) else { return }
         set(value, forKey: destination)
     }
+
+    public func allKeys() -> [String] {
+        Array(dictionaryRepresentation().keys)
+    }
 }
 
 extension NSUbiquitousKeyValueStore {
@@ -194,5 +206,9 @@ extension NSUbiquitousKeyValueStore {
     public func copyRawValue(fromKey source: String, toKey destination: String) {
         guard let value = object(forKey: source) else { return }
         set(value, forKey: destination)
+    }
+
+    public func allKeys() -> [String] {
+        Array(dictionaryRepresentation.keys)
     }
 }

@@ -54,6 +54,19 @@ final class SettingsObject {
     @ObservationIgnored
     var observationIgnored: Bool
 
+    #if os(macOS)
+    var macOnlyFeature: Bool
+    #endif
+
+    #if os(iOS)
+    var iosOnlyFeature: Bool
+    #endif
+
+    #if os(macOS)
+    @Attribute(type: .localWith(suite: "platformTest"), key: "MacAttribute")
+    var macAttributeFeature: Bool
+    #endif
+
     init() {
         self.isObservationSupported = true
         self.isDisabledOnAPerPropertyLevel = true
@@ -73,6 +86,15 @@ final class SettingsObject {
         self.observationTracked = false
         self.transient = true
         self.observationIgnored = true
+        #if os(macOS)
+        self.macOnlyFeature = false
+        #endif
+        #if os(iOS)
+        self.iosOnlyFeature = false
+        #endif
+        #if os(macOS)
+        self.macAttributeFeature = false
+        #endif
     }
 }
 
@@ -89,11 +111,18 @@ final class CloudSettingsObject {
     @Attribute(type: .local, key: "localOverride")
     var localOverride: Bool
 
+    #if os(macOS)
+    var cloudMacOnly: Bool
+    #endif
+
     init() {
         self.cloudBool = false
         self.cloudString = ""
         self.cloudInt = 0
         self.cloudDouble = 0.0
         self.localOverride = false
+        #if os(macOS)
+        self.cloudMacOnly = false
+        #endif
     }
 }

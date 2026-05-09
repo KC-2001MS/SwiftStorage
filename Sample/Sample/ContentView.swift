@@ -104,8 +104,25 @@ struct ContentView: View {
 #endif
 
                     Toggle("Local Override (stored locally)", isOn: $cloudSettings.localOverride)
+
+#if os(macOS)
+                    Toggle("Cloud Mac Only", isOn: $cloudSettings.cloudMacOnly)
+#endif
                 } header: {
                     Text("Cloud Storage (iCloud KVS)")
+                }
+
+                Section {
+#if os(macOS)
+                    Toggle("Mac Only Feature", isOn: $settings.macOnlyFeature)
+
+                    Toggle("Mac Attribute Feature", isOn: $settings.macAttributeFeature)
+#endif
+#if os(iOS)
+                    Toggle("iOS Only Feature", isOn: $settings.iosOnlyFeature)
+#endif
+                } header: {
+                    Text("#if Conditional Properties")
                 }
             }
             .formStyle(.grouped)

@@ -123,7 +123,7 @@ public struct StorageSchemaVersion: Sendable, Hashable, Comparable, CustomString
 /// ### Identifying the Version
 ///
 /// - ``versionIdentifier``
-public protocol VersionedStorageSchema {
+public protocol VersionedStorageSchema: Sendable {
     /// The semantic version that uniquely identifies this schema.
     ///
     /// The migrator compares this value against the version stored in the backend

@@ -167,6 +167,116 @@ public struct StorageMacro {
             trailingTrivia: .space
         )
     }
+
+    static func allVariableDecls(from members: MemberBlockItemListSyntax) -> [VariableDeclSyntax] {
+        var result: [VariableDeclSyntax] = []
+        for member in members {
+            if let varDecl = member.decl.as(VariableDeclSyntax.self) {
+                result.append(varDecl)
+            } else if let ifConfig = member.decl.as(IfConfigDeclSyntax.self) {
+                for clause in ifConfig.clauses {
+                    if case .decls(let nestedMembers) = clause.elements {
+                        result.append(contentsOf: allVariableDecls(from: nestedMembers))
+                    }
+                }
+            }
+        }
+        return result
+    }
+
+    private static func generateCloudCaseLines(
+        from members: MemberBlockItemListSyntax,
+        className: String,
+        classDefaultTypeExpr: String,
+        classDefaultHashed: Bool
+    ) -> [String] {
+        var lines: [String] = []
+
+        for member in members {
+            if let varDecl = member.decl.as(VariableDeclSyntax.self),
+               varDecl.isValidForObservation,
+               let identifier = varDecl.identifier?.text {
+
+                if varDecl.hasMacroApplication(transientMacroName) ||
+                   varDecl.hasMacroApplication(observationIgnoredMacroName) ||
+                   varDecl.hasMacroApplication(observationTrackedMacroName) ||
+                   varDecl.hasAttributeOption("ephemeral") {
+                    continue
+                }
+
+                var effectiveType = classDefaultTypeExpr
+                if varDecl.hasMacroApplication(attributeMacroName),
+                   let typeText = varDecl.attributeTypeValue(for: "type") {
+                    effectiveType = typeText
+                }
+
+                guard effectiveType == ".cloud" else { continue }
+
+                var key = "\(className).\(identifier)"
+                if varDecl.hasMacroApplication(attributeMacroName),
+                   let customKey = varDecl.attributeStringValue(for: "key") {
+                    key = customKey
+                }
+
+                var hashed = classDefaultHashed
+                if varDecl.hasMacroApplication(attributeMacroName),
+                   let hashedValue = varDecl.attributeBoolValue(for: "hashed") {
+                    hashed = hashedValue
+                }
+
+                let keyExpression: String
+                if hashed {
+                    keyExpression = "#hashify(\"\(key)\")"
+                } else {
+                    keyExpression = "\"\(key)\""
+                }
+
+                lines.append("""
+                case \(keyExpression):
+                \(registrarVariableName).willSet(self, keyPath: \\.\(identifier))
+                \(registrarVariableName).didSet(self, keyPath: \\.\(identifier))
+                """)
+
+            } else if let ifConfig = member.decl.as(IfConfigDeclSyntax.self) {
+                var clauseResults: [(header: String, nestedLines: [String])] = []
+                var hasAny = false
+
+                for (index, clause) in ifConfig.clauses.enumerated() {
+                    let header: String
+                    if index == 0 {
+                        header = "#if \(clause.condition!.description)"
+                    } else if let condition = clause.condition {
+                        header = "#elseif \(condition.description)"
+                    } else {
+                        header = "#else"
+                    }
+
+                    var nestedLines: [String] = []
+                    if case .decls(let nestedMembers) = clause.elements {
+                        nestedLines = generateCloudCaseLines(
+                            from: nestedMembers,
+                            className: className,
+                            classDefaultTypeExpr: classDefaultTypeExpr,
+                            classDefaultHashed: classDefaultHashed
+                        )
+                    }
+
+                    if !nestedLines.isEmpty { hasAny = true }
+                    clauseResults.append((header: header, nestedLines: nestedLines))
+                }
+
+                if hasAny {
+                    for result in clauseResults {
+                        lines.append(result.header)
+                        lines.append(contentsOf: result.nestedLines)
+                    }
+                    lines.append("#endif")
+                }
+            }
+        }
+
+        return lines
+    }
 }
 
 struct StorageDiagnostic: DiagnosticMessage {
@@ -525,65 +635,17 @@ extension StorageMacro: MemberMacro {
 
         // Collect cloud properties for sync code generation
         let className = property.name.text
-        var cloudProperties: [(identifier: String, keyExpression: String)] = []
 
-        for member in declaration.memberBlock.members {
-            guard let varDecl = member.decl.as(VariableDeclSyntax.self),
-                  varDecl.isValidForObservation,
-                  let identifier = varDecl.identifier?.text else {
-                continue
-            }
-
-            // Skip non-persisted properties
-            if varDecl.hasMacroApplication(StorageMacro.transientMacroName) ||
-               varDecl.hasMacroApplication(StorageMacro.observationIgnoredMacroName) ||
-               varDecl.hasMacroApplication(StorageMacro.observationTrackedMacroName) ||
-               varDecl.hasAttributeOption("ephemeral") {
-                continue
-            }
-
-            // Determine effective storage type
-            var effectiveType = classDefaultTypeExpr
-            if varDecl.hasMacroApplication(StorageMacro.attributeMacroName),
-               let typeText = varDecl.attributeTypeValue(for: "type") {
-                effectiveType = typeText
-            }
-
-            guard effectiveType == ".cloud" else { continue }
-
-            // Determine key
-            var key = "\(className).\(identifier)"
-            if varDecl.hasMacroApplication(StorageMacro.attributeMacroName),
-               let customKey = varDecl.attributeStringValue(for: "key") {
-                key = customKey
-            }
-
-            // Determine hashing (class default can be overridden by @Attribute(hashed:))
-            var hashed = classDefaultHashed
-            if varDecl.hasMacroApplication(StorageMacro.attributeMacroName),
-               let hashedValue = varDecl.attributeBoolValue(for: "hashed") {
-                hashed = hashedValue
-            }
-
-            let keyExpression: String
-            if hashed {
-                keyExpression = "#hashify(\"\(key)\")"
-            } else {
-                keyExpression = "\"\(key)\""
-            }
-
-            cloudProperties.append((identifier: identifier, keyExpression: keyExpression))
-        }
+        let cloudCaseLines = Self.generateCloudCaseLines(
+            from: declaration.memberBlock.members,
+            className: className,
+            classDefaultTypeExpr: classDefaultTypeExpr,
+            classDefaultHashed: classDefaultHashed
+        )
 
         // Generate cloud sync code if any cloud properties exist
-        if !cloudProperties.isEmpty {
-            let cases = cloudProperties.map { prop in
-                """
-                case \(prop.keyExpression):
-                \(registrarVariableName).willSet(self, keyPath: \\.\(prop.identifier))
-                \(registrarVariableName).didSet(self, keyPath: \\.\(prop.identifier))
-                """
-            }.joined(separator: "\n")
+        if !cloudCaseLines.isEmpty {
+            let cases = cloudCaseLines.joined(separator: "\n")
 
             let cloudKeysDecl: DeclSyntax =
             """
@@ -642,9 +704,8 @@ extension StorageMacro: MemberMacro {
         }
 
         // Generate per-property _$store_<name> for @Attribute(type:) overrides
-        for member in declaration.memberBlock.members {
-            guard let varDecl = member.decl.as(VariableDeclSyntax.self),
-                  varDecl.isValidForObservation,
+        for varDecl in Self.allVariableDecls(from: declaration.memberBlock.members) {
+            guard varDecl.isValidForObservation,
                   let identifier = varDecl.identifier?.text else {
                 continue
             }

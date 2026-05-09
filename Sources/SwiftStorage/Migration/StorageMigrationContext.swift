@@ -35,7 +35,13 @@
 ///     fromVersion: SchemaV1.self,
 ///     toVersion: SchemaV2.self,
 ///     willMigrate: { context in
-///         // Rename a key
+///         // Rename a suite (class name prefix) for all its keys
+///         context.renameSuite(from: "OldSettings", to: "NewSettings")
+///
+///         // Rename a single key within a suite
+///         context.renameKey(inSuite: "Settings", from: "userName", to: "displayName")
+///
+///         // Rename a key using full key paths
 ///         context.renameKey(from: "Settings.userName", to: "Settings.displayName")
 ///
 ///         // Transform a value
@@ -65,6 +71,8 @@
 /// ### Managing Keys
 ///
 /// - ``renameKey(from:to:)``
+/// - ``renameSuite(from:to:)``
+/// - ``renameKey(inSuite:from:to:)``
 /// - ``removeValue(forKey:)``
 /// - ``hasValue(forKey:)``
 public final class StorageMigrationContext: @unchecked Sendable {
@@ -141,6 +149,51 @@ public final class StorageMigrationContext: @unchecked Sendable {
     public func renameKey(from oldKey: String, to newKey: String) {
         backend.copyRawValue(fromKey: oldKey, toKey: newKey)
         backend.removeValue(forKey: oldKey)
+    }
+
+    /// Renames a suite (class name prefix) for all matching keys in the backend.
+    ///
+    /// SwiftStorage keys follow the convention `SuiteName.propertyName`.
+    /// This method finds all keys prefixed with `oldSuite.` and renames them
+    /// to use `newSuite.` while preserving the property name portion.
+    ///
+    /// For example, renaming the suite from `"OldSettings"` to `"NewSettings"`
+    /// transforms:
+    /// - `"OldSettings.darkMode"` → `"NewSettings.darkMode"`
+    /// - `"OldSettings.fontSize"` → `"NewSettings.fontSize"`
+    ///
+    /// Keys that do not match the `oldSuite.` prefix are left unchanged.
+    ///
+    /// - Parameters:
+    ///   - oldSuite: The existing suite name to rename from.
+    ///   - newSuite: The new suite name to rename to.
+    public func renameSuite(from oldSuite: String, to newSuite: String) {
+        let prefix = oldSuite + "."
+        let matchingKeys = backend.allKeys().filter { $0.hasPrefix(prefix) }
+        for key in matchingKeys {
+            let suffix = key.dropFirst(prefix.count)
+            let newKey = newSuite + "." + suffix
+            backend.copyRawValue(fromKey: key, toKey: newKey)
+            backend.removeValue(forKey: key)
+        }
+    }
+
+    /// Renames a property key within a specific suite.
+    ///
+    /// This is a convenience method that constructs full keys from the suite
+    /// name and property names, then performs a key rename.
+    ///
+    /// For example, `renameKey(inSuite: "Settings", from: "userName", to: "displayName")`
+    /// renames `"Settings.userName"` to `"Settings.displayName"`.
+    ///
+    /// - Parameters:
+    ///   - suite: The suite (class) name that contains the key.
+    ///   - oldName: The existing property name within the suite.
+    ///   - newName: The new property name within the suite.
+    public func renameKey(inSuite suite: String, from oldName: String, to newName: String) {
+        let oldKey = suite + "." + oldName
+        let newKey = suite + "." + newName
+        renameKey(from: oldKey, to: newKey)
     }
 
     /// Removes a key and its associated value from the storage backend.

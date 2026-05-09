@@ -1112,6 +1112,308 @@ struct CloudStorageTests {
     }
 }
 
+@Suite("#if Conditional Compilation Testing")
+struct IfConfigTests {
+    @Test("Does a property inside #if work correctly?")
+    func propertyInsideIfConfigTest() async throws {
+        assertMacro(testMacros) {
+            """
+            @Storage
+            class TestClass {
+                var normal: Bool = false
+                #if os(macOS)
+                var macOnly: Bool = false
+                #endif
+            }
+            """
+        } expansion: {
+            """
+            class TestClass {
+                var normal: Bool {
+                    @storageRestrictions(initializes: _normal)
+                    init(initialValue) {
+                        _normal = initialValue
+                    }
+                    get {
+                        access(keyPath: \\.normal)
+                        return _$store.persistedValue(forKey: #hashify("TestClass.normal"), default: _normal)
+                    }
+                    set {
+                        if shouldNotifyObservers(_$store.persistedValue(forKey: #hashify("TestClass.normal"), default: _normal), newValue) {
+                            withMutation(keyPath: \\.normal) {
+                                _$store.setPersisted(newValue, forKey: #hashify("TestClass.normal"))
+                            }
+                        }
+                    }
+                    _modify {
+                        access(keyPath: \\.normal)
+                        _$observationRegistrar.willSet(self, keyPath: \\.normal)
+                        var value = _$store.persistedValue(forKey: #hashify("TestClass.normal"), default: _normal)
+                        defer {
+                            _$store.setPersisted(value, forKey: #hashify("TestClass.normal"))
+                            _$observationRegistrar.didSet(self, keyPath: \\.normal)
+                        }
+                        yield &value
+                    }
+                }
+                #if os(macOS)
+                var macOnly: Bool = false
+                #endif
+
+                private let _$observationRegistrar = Observation.ObservationRegistrar()
+
+                internal nonisolated func access<Member>(
+                    keyPath: KeyPath<TestClass, Member>
+                ) {
+                    _$observationRegistrar.access(self, keyPath: keyPath)
+                }
+
+                internal nonisolated func withMutation<Member, MutationResult>(
+                    keyPath: KeyPath<TestClass, Member>,
+                    _ mutation: () throws -> MutationResult
+                ) rethrows -> MutationResult {
+                    try _$observationRegistrar.withMutation(of: self, keyPath: keyPath, mutation)
+                }
+
+                private let className = "TestClass"
+
+                private nonisolated func shouldNotifyObservers<Member>(_ lhs: Member, _ rhs: Member) -> Bool {
+                    true
+                }
+
+                private nonisolated func shouldNotifyObservers<Member: Equatable>(_ lhs: Member, _ rhs: Member) -> Bool {
+                    lhs != rhs
+                }
+
+                private nonisolated func shouldNotifyObservers<Member: AnyObject>(_ lhs: Member, _ rhs: Member) -> Bool {
+                    lhs !== rhs
+                }
+
+                private nonisolated func shouldNotifyObservers<Member: Equatable & AnyObject>(_ lhs: Member, _ rhs: Member) -> Bool {
+                    lhs != rhs
+                }
+
+                private let _$store: any StorageBackend = (StorageType.local).backend
+            }
+            """
+        }
+    }
+
+    @Test("Does @Attribute(type:) inside #if generate per-property store?")
+    func attributeTypeInsideIfConfigTest() async throws {
+        assertMacro(testMacros) {
+            """
+            @Storage
+            class TestClass {
+                var normal: Bool = false
+                #if os(macOS)
+                @Attribute(type: .localWith(suite: "test"), key: "MacKey")
+                var macOnly: Bool = false
+                #endif
+            }
+            """
+        } expansion: {
+            """
+            class TestClass {
+                var normal: Bool {
+                    @storageRestrictions(initializes: _normal)
+                    init(initialValue) {
+                        _normal = initialValue
+                    }
+                    get {
+                        access(keyPath: \\.normal)
+                        return _$store.persistedValue(forKey: #hashify("TestClass.normal"), default: _normal)
+                    }
+                    set {
+                        if shouldNotifyObservers(_$store.persistedValue(forKey: #hashify("TestClass.normal"), default: _normal), newValue) {
+                            withMutation(keyPath: \\.normal) {
+                                _$store.setPersisted(newValue, forKey: #hashify("TestClass.normal"))
+                            }
+                        }
+                    }
+                    _modify {
+                        access(keyPath: \\.normal)
+                        _$observationRegistrar.willSet(self, keyPath: \\.normal)
+                        var value = _$store.persistedValue(forKey: #hashify("TestClass.normal"), default: _normal)
+                        defer {
+                            _$store.setPersisted(value, forKey: #hashify("TestClass.normal"))
+                            _$observationRegistrar.didSet(self, keyPath: \\.normal)
+                        }
+                        yield &value
+                    }
+                }
+                #if os(macOS)
+                var macOnly: Bool = false
+                #endif
+
+                private let _$observationRegistrar = Observation.ObservationRegistrar()
+
+                internal nonisolated func access<Member>(
+                    keyPath: KeyPath<TestClass, Member>
+                ) {
+                    _$observationRegistrar.access(self, keyPath: keyPath)
+                }
+
+                internal nonisolated func withMutation<Member, MutationResult>(
+                    keyPath: KeyPath<TestClass, Member>,
+                    _ mutation: () throws -> MutationResult
+                ) rethrows -> MutationResult {
+                    try _$observationRegistrar.withMutation(of: self, keyPath: keyPath, mutation)
+                }
+
+                private let className = "TestClass"
+
+                private nonisolated func shouldNotifyObservers<Member>(_ lhs: Member, _ rhs: Member) -> Bool {
+                    true
+                }
+
+                private nonisolated func shouldNotifyObservers<Member: Equatable>(_ lhs: Member, _ rhs: Member) -> Bool {
+                    lhs != rhs
+                }
+
+                private nonisolated func shouldNotifyObservers<Member: AnyObject>(_ lhs: Member, _ rhs: Member) -> Bool {
+                    lhs !== rhs
+                }
+
+                private nonisolated func shouldNotifyObservers<Member: Equatable & AnyObject>(_ lhs: Member, _ rhs: Member) -> Bool {
+                    lhs != rhs
+                }
+
+                private let _$store: any StorageBackend = (StorageType.local).backend
+
+                private let _$store_macOnly: any StorageBackend = (StorageType.localWith(suite: "test")).backend
+            }
+            """
+        }
+    }
+
+    @Test("Does cloud property inside #if generate conditional cloud sync code?")
+    func cloudPropertyInsideIfConfigTest() async throws {
+        assertMacro(testMacros) {
+            """
+            @Storage(type: .cloud)
+            class TestClass {
+                var cloudValue: Bool = false
+                #if os(macOS)
+                var cloudMacOnly: Bool = false
+                #endif
+            }
+            """
+        } expansion: {
+            """
+            class TestClass {
+                var cloudValue: Bool {
+                    @storageRestrictions(initializes: _cloudValue)
+                    init(initialValue) {
+                        _cloudValue = initialValue
+                    }
+                    get {
+                        _$startCloudSync()
+                        access(keyPath: \\.cloudValue)
+                        return _$store.persistedValue(forKey: #hashify("TestClass.cloudValue"), default: _cloudValue)
+                    }
+                    set {
+                        if shouldNotifyObservers(_$store.persistedValue(forKey: #hashify("TestClass.cloudValue"), default: _cloudValue), newValue) {
+                            withMutation(keyPath: \\.cloudValue) {
+                                _$store.setPersisted(newValue, forKey: #hashify("TestClass.cloudValue"))
+                            }
+                        }
+                    }
+                    _modify {
+                        access(keyPath: \\.cloudValue)
+                        _$observationRegistrar.willSet(self, keyPath: \\.cloudValue)
+                        var value = _$store.persistedValue(forKey: #hashify("TestClass.cloudValue"), default: _cloudValue)
+                        defer {
+                            _$store.setPersisted(value, forKey: #hashify("TestClass.cloudValue"))
+                            _$observationRegistrar.didSet(self, keyPath: \\.cloudValue)
+                        }
+                        yield &value
+                    }
+                }
+                #if os(macOS)
+                var cloudMacOnly: Bool = false
+                #endif
+
+                private let _$observationRegistrar = Observation.ObservationRegistrar()
+
+                internal nonisolated func access<Member>(
+                    keyPath: KeyPath<TestClass, Member>
+                ) {
+                    _$observationRegistrar.access(self, keyPath: keyPath)
+                }
+
+                internal nonisolated func withMutation<Member, MutationResult>(
+                    keyPath: KeyPath<TestClass, Member>,
+                    _ mutation: () throws -> MutationResult
+                ) rethrows -> MutationResult {
+                    try _$observationRegistrar.withMutation(of: self, keyPath: keyPath, mutation)
+                }
+
+                private let className = "TestClass"
+
+                private nonisolated func shouldNotifyObservers<Member>(_ lhs: Member, _ rhs: Member) -> Bool {
+                    true
+                }
+
+                private nonisolated func shouldNotifyObservers<Member: Equatable>(_ lhs: Member, _ rhs: Member) -> Bool {
+                    lhs != rhs
+                }
+
+                private nonisolated func shouldNotifyObservers<Member: AnyObject>(_ lhs: Member, _ rhs: Member) -> Bool {
+                    lhs !== rhs
+                }
+
+                private nonisolated func shouldNotifyObservers<Member: Equatable & AnyObject>(_ lhs: Member, _ rhs: Member) -> Bool {
+                    lhs != rhs
+                }
+
+                private func _$cloudKeys(_ key: String) -> Bool {
+                    switch key {
+                    case #hashify("TestClass.cloudValue"):
+                        _$observationRegistrar.willSet(self, keyPath: \\.cloudValue)
+                        _$observationRegistrar.didSet(self, keyPath: \\.cloudValue)
+                    #if os(macOS)
+                    case #hashify("TestClass.cloudMacOnly"):
+                        _$observationRegistrar.willSet(self, keyPath: \\.cloudMacOnly)
+                        _$observationRegistrar.didSet(self, keyPath: \\.cloudMacOnly)
+                    #endif
+                    default:
+                        return false
+                    }
+                    return true
+                }
+
+                private var _$cloudNotificationObserver: (any NSObjectProtocol)? = nil
+
+                private func _$startCloudSync() {
+                    guard _$cloudNotificationObserver == nil else {
+                        return
+                    }
+                    NSUbiquitousKeyValueStore.default.synchronize()
+                    let _$weakRef = _$WeakSendableRef(self)
+                    _$cloudNotificationObserver = NotificationCenter.default.addObserver(
+                        forName: NSUbiquitousKeyValueStore.didChangeExternallyNotification,
+                        object: NSUbiquitousKeyValueStore.default,
+                        queue: .main
+                    ) { notification in
+                        guard let _$self = _$weakRef.value,
+                        let userInfo = notification.userInfo,
+                        let changedKeys = userInfo[NSUbiquitousKeyValueStoreChangedKeysKey] as? [String] else {
+                            return
+                        }
+                        for key in changedKeys {
+                            _ = _$self._$cloudKeys(key)
+                        }
+                    }
+                }
+
+                private let _$store: any StorageBackend = (StorageType.cloud).backend
+            }
+            """
+        }
+    }
+}
+
 @Suite("Diagnostic Testing", .tags(.storage))
 struct DiagnosticTests {
     @Test("Does @Storage on enum produce an error?")

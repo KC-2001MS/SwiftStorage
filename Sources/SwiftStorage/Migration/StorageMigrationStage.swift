@@ -34,6 +34,7 @@
 /// | Add a new property with a default | ``lightweight(fromVersion:toVersion:)`` |
 /// | Remove a property (old key can remain) | ``lightweight(fromVersion:toVersion:)`` |
 /// | Rename a property / change a key | ``custom(fromVersion:toVersion:willMigrate:didMigrate:)`` |
+/// | Rename a suite (class name) | ``custom(fromVersion:toVersion:willMigrate:didMigrate:)`` |
 /// | Change a value's type | ``custom(fromVersion:toVersion:willMigrate:didMigrate:)`` |
 /// | Split or merge properties | ``custom(fromVersion:toVersion:willMigrate:didMigrate:)`` |
 ///
@@ -46,12 +47,22 @@
 ///     toVersion: SchemaV2.self
 /// )
 ///
-/// // Custom: rename "userName" to "displayName".
+/// // Custom: rename a suite (class name prefix).
 /// let v2toV3 = StorageMigrationStage.custom(
 ///     fromVersion: SchemaV2.self,
 ///     toVersion: SchemaV3.self,
 ///     willMigrate: { context in
-///         context.renameKey(from: "Settings.userName", to: "Settings.displayName")
+///         context.renameSuite(from: "OldSettings", to: "NewSettings")
+///     },
+///     didMigrate: nil
+/// )
+///
+/// // Custom: rename a key within a suite.
+/// let v3toV4 = StorageMigrationStage.custom(
+///     fromVersion: SchemaV3.self,
+///     toVersion: SchemaV4.self,
+///     willMigrate: { context in
+///         context.renameKey(inSuite: "Settings", from: "userName", to: "displayName")
 ///     },
 ///     didMigrate: nil
 /// )
